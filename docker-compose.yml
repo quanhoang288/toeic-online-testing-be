@@ -1,0 +1,46 @@
+version: '3'
+
+services:
+  db-dev:
+    image: mysql:5.7
+    container_name: blog-db-dev
+    restart: unless-stopped
+    env_file:
+      - .env
+    tty: true
+    environment:
+      MYSQL_ROOT_PASSWORD: '${DB_ROOT_PASSWORD}'
+      MYSQL_DATABASE: '${DB_DATABASE}'
+      MYSQL_USER: '${DB_USERNAME}'
+      MYSQL_PASSWORD: '${DB_PASSWORD}'
+    ports:
+      - '$DB_PORT:3306'
+    volumes:
+      - blog-dbdata-dev:/var/lib/mysql/
+    networks:
+      - blog-dev-network
+
+  backend-dev:
+    container_name: blog-backend-dev
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    env_file:
+      - .env
+    ports:
+      - '$PORT:$PORT'
+    depends_on:
+      - db-dev
+    command: 'npm run migration:run && npm start:dev'
+    volumes:
+      - ./src:/home/node/app/src
+    networks:
+      - blog-dev-network
+
+networks:
+  blog-dev-network:
+    driver: bridge
+volumes:
+  blog-dbdata-dev:
+    driver: local
