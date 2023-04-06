@@ -1,5 +1,7 @@
-import { Column, Entity } from 'typeorm';
-import { AbstractEntity } from './abstract.entity';
+import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
+import { AbstractEntity } from '../../common/models/abstract.entity';
+import { ExamEntity } from './exam.entity';
+import { SectionEntity } from './section.entity';
 
 export const EXAM_SECTION_TABLE_NAME = 'exam_sections';
 
@@ -9,8 +11,16 @@ export class ExamSectionEntity extends AbstractEntity {
   examId!: number;
 
   @Column()
-  name!: string;
+  sectionId!: number;
 
   @Column()
-  numQuestions!: number;
+  sectionName!: string;
+
+  @ManyToOne(() => ExamEntity, (exam) => exam.examSections)
+  @JoinColumn({ name: 'exam_id' })
+  exam: ExamEntity;
+
+  @ManyToOne(() => SectionEntity)
+  @JoinColumn({ name: 'section' })
+  section: SectionEntity;
 }

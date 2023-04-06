@@ -1,6 +1,9 @@
-import path from 'path';
+import * as dotenv from 'dotenv';
+dotenv.config();
+
 import { DataSource, DataSourceOptions } from 'typeorm';
-import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
+
+import { SnakeNamingStrategy } from '../database/snake-naming.strategy';
 
 export const dataSourceOptions: DataSourceOptions = {
   type: 'mysql',
@@ -8,12 +11,13 @@ export const dataSourceOptions: DataSourceOptions = {
   port: process.env['DB_PORT'] ? Number(process.env['DB_PORT']) : 3307,
   username: process.env['DB_USERNAME'] || 'dev',
   password: process.env['DB_PASSWORD'] || 'test',
-  database: process.env['DB_DATABASE'] || 'blog_dev',
+  database: process.env['DB_DATABASE'] || 'toeic-db',
   logging: true,
-  entities: [path.join(__dirname, '../../**/entities/**/*.entity.{js,ts}')],
+  entities: [__dirname + '../**/entities/*.entity.{js,ts}'],
   subscribers: [],
-  migrations: [path.join(__dirname, '../../**/migrations/*.{js,ts}')],
+  migrations: [__dirname + '../**/migrations/*.{js,ts}'],
   namingStrategy: new SnakeNamingStrategy(),
+  synchronize: false,
 };
 
 const dataSource = new DataSource(dataSourceOptions);
