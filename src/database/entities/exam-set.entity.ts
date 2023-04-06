@@ -1,5 +1,6 @@
-import { Column, Entity } from 'typeorm';
-import { AbstractEntity } from './abstract.entity';
+import { Column, Entity, OneToMany } from 'typeorm';
+import { AbstractEntity } from '../../common/models/abstract.entity';
+import { ExamEntity } from './exam.entity';
 
 export const EXAM_SET_TABLE_NAME = 'exam_sets';
 
@@ -10,4 +11,7 @@ export class ExamSetEntity extends AbstractEntity {
 
   @Column({ nullable: true })
   description!: string;
+
+  @OneToMany(() => ExamEntity, (exam) => exam.examSet)
+  exams: ExamEntity[];
 }

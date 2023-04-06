@@ -1,5 +1,6 @@
-import { Column, Entity } from 'typeorm';
-import { AbstractEntity } from './abstract.entity';
+import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
+import { AbstractEntity } from '../../common/models/abstract.entity';
+import { QuestionEntity } from './question.entity';
 
 export const ANSWER_TABLE_NAME = 'answers';
 
@@ -12,5 +13,9 @@ export class AnswerEntity extends AbstractEntity {
   text!: string;
 
   @Column({ default: false })
-  is_correct!: boolean;
+  isCorrect!: boolean;
+
+  @ManyToOne(() => QuestionEntity, (question) => question.answers)
+  @JoinColumn({ name: 'question_id' })
+  question: QuestionEntity;
 }
