@@ -1,5 +1,7 @@
-import { Column, Entity, Unique } from 'typeorm';
-import { AbstractEntity } from './abstract.entity';
+import { Column, Entity, JoinColumn, ManyToOne, Unique } from 'typeorm';
+import { AbstractEntity } from '../../common/models/abstract.entity';
+import { AccountEntity } from './account.entity';
+import { OAuthProviderEntity } from './oauth-provider.entity';
 
 export const ACCOUNT_PROVIDER_LINKING_TABLE_NAME = 'account_provider_linking';
 
@@ -23,4 +25,12 @@ export class AccountProviderLinkingEntity extends AbstractEntity {
 
   @Column({ nullable: true })
   refreshTokenExpiresAt?: Date;
+
+  @ManyToOne(() => AccountEntity)
+  @JoinColumn({ name: 'account_id' })
+  account: AccountEntity;
+
+  @ManyToOne(() => OAuthProviderEntity)
+  @JoinColumn({ name: 'provider_id' })
+  provider: OAuthProviderEntity;
 }

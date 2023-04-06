@@ -1,5 +1,6 @@
-import { Column, Entity } from 'typeorm';
-import { AbstractEntity } from './abstract.entity';
+import { Column, Entity, ManyToMany } from 'typeorm';
+import { AbstractEntity } from '../../common/models/abstract.entity';
+import { AccountEntity } from './account.entity';
 
 export const OAUTH_PROVIDER_TABLE_NAME = 'oauth_providers';
 
@@ -22,4 +23,7 @@ export class OAuthProviderEntity extends AbstractEntity {
 
   @Column()
   userInfoUrl!: string;
+
+  @ManyToMany(() => AccountEntity, (account) => account.providers)
+  accounts: AccountEntity[];
 }

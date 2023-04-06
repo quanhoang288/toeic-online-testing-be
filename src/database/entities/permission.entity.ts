@@ -1,5 +1,6 @@
-import { Column, Entity } from 'typeorm';
-import { AbstractEntity } from './abstract.entity';
+import { Column, Entity, ManyToMany } from 'typeorm';
+import { AbstractEntity } from '../../common/models/abstract.entity';
+import { RoleEntity } from './role.entity';
 
 export const PERMISSION_TABLE_NAME = 'permissions';
 
@@ -9,5 +10,8 @@ export class PermissionEntity extends AbstractEntity {
   name!: string;
 
   @Column({ nullable: true })
-  description: string;
+  description?: string;
+
+  @ManyToMany(() => RoleEntity, (role) => role.permissions)
+  roles: RoleEntity[];
 }
