@@ -26,7 +26,7 @@ export class QuestionEntity extends AbstractEntity {
   imageUrl?: string;
 
   @Column({ nullable: true })
-  questionSetId?: string;
+  questionSetId?: number;
 
   @Column({ nullable: true })
   explanation?: string;

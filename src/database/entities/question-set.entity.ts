@@ -13,10 +13,10 @@ export class QuestionSetEntity extends AbstractEntity {
   title: string;
 
   @Column({ nullable: true })
-  textContext!: string;
+  textContext?: string;
 
   @Column({ nullable: true })
-  audioUrl!: string;
+  audioUrl?: string;
 
   @OneToMany(() => QuestionEntity, (question) => question.questionSet)
   questions: QuestionEntity[];
