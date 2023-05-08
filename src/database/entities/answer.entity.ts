@@ -10,10 +10,13 @@ export class AnswerEntity extends AbstractEntity {
   type!: string;
 
   @Column()
-  text!: string;
+  content!: string;
 
   @Column({ default: false })
   isCorrect!: boolean;
+
+  @Column()
+  questionId!: number;
 
   @ManyToOne(() => QuestionEntity, (question) => question.answers)
   @JoinColumn({ name: 'question_id' })

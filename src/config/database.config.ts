@@ -4,6 +4,7 @@ dotenv.config();
 import { DataSource, DataSourceOptions } from 'typeorm';
 
 import { SnakeNamingStrategy } from '../database/snake-naming.strategy';
+import path from 'path';
 
 export const dataSourceOptions: DataSourceOptions = {
   type: 'mysql',
@@ -13,9 +14,9 @@ export const dataSourceOptions: DataSourceOptions = {
   password: process.env['DB_PASSWORD'] || 'test',
   database: process.env['DB_DATABASE'] || 'toeic-db',
   logging: true,
-  entities: [__dirname + '../**/entities/*.entity.{js,ts}'],
+  entities: [path.join(__dirname, '../**/entities/*.entity.{js,ts}')],
   subscribers: [],
-  migrations: [__dirname + '../**/migrations/*.{js,ts}'],
+  migrations: [path.join(__dirname, '../**/migrations/*.{js,ts}')],
   namingStrategy: new SnakeNamingStrategy(),
   synchronize: false,
 };

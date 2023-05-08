@@ -3,7 +3,7 @@ version: '3'
 services:
   db-dev:
     image: mysql:8.0
-    container_name: blog-db-dev
+    container_name: toeic-db-dev
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: '${DB_ROOT_PASSWORD}'

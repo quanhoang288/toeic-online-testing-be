@@ -1,27 +1,46 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsNotEmpty } from 'class-validator';
-import { IFile } from 'src/common/models/file';
+import {
+  IsArray,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { QuestionDto } from './question.dto';
 
 export class QuestionSetDto {
-  examSectionId?: number;
-
-  @ApiProperty({ nullable: true })
-  title?: string;
-
-  @ApiProperty({ nullable: true })
-  textContent?: string;
-
-  @ApiProperty({ nullable: true })
-  imageFiles?: IFile[];
-
-  @ApiProperty({ nullable: true })
-  audioFile?: IFile;
-
-  @ApiProperty({ nullable: true })
-  gaps?: string[];
+  sectionId?: number;
 
   @ApiProperty()
+  @IsNumber()
+  @IsOptional()
+  id?: number;
+
+  @ApiProperty({ nullable: true })
+  @IsString()
+  @IsOptional()
+  content?: string;
+
+  @ApiProperty()
+  @IsNumber()
+  @IsOptional()
+  displayOrder?: number;
+
+  @ApiProperty({ nullable: true, type: [Number] })
+  imageFileIndices?: number[];
+
+  @ApiProperty({ nullable: true })
+  imageKeys?: string[];
+
+  @ApiProperty({ nullable: true, type: Number })
+  @IsNumber()
+  @IsOptional()
+  audioFileIndex?: number;
+
+  @ApiProperty({ nullable: true })
+  audioKey?: string;
+
+  @ApiProperty({ type: [QuestionDto] })
   @IsArray()
   @IsNotEmpty()
   questions: QuestionDto[];

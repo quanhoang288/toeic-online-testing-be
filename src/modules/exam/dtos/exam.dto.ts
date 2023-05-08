@@ -5,9 +5,9 @@ import {
   IsDate,
   IsNotEmpty,
   IsNumber,
+  IsOptional,
   IsString,
 } from 'class-validator';
-import { IFile } from 'src/common/models/file';
 import { ExamSectionDto } from './section.dto';
 
 export class ExamDto {
@@ -19,35 +19,67 @@ export class ExamDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  type: string;
+  examTypeId: number;
 
   @ApiProperty()
   @IsBoolean()
+  @IsOptional()
   hasMultipleSections: boolean;
 
   @ApiProperty({ nullable: true })
   @IsNumber()
+  @IsOptional()
   timeLimitInMins?: number;
 
   @ApiProperty({ nullable: true })
   @IsDate()
+  @IsOptional()
   registerStartsAt?: string;
 
   @ApiProperty({ nullable: true })
   @IsDate()
+  @IsOptional()
   registerEndsAt?: string;
 
   @ApiProperty({ nullable: true })
   @IsDate()
+  @IsOptional()
   startsAt?: string;
 
-  @ApiProperty({ nullable: true })
-  audioFile?: IFile;
-
-  @ApiProperty()
+  @ApiProperty({ type: [ExamSectionDto] })
   @IsArray()
+  @IsNotEmpty()
   sections: ExamSectionDto[];
 
   @ApiProperty({ nullable: true })
-  examSet?: string | number;
+  @IsOptional()
+  examSetId?: number;
+}
+
+export class ExamListItemDto {
+  @ApiProperty()
+  name: string;
+
+  @ApiProperty()
+  type: string;
+
+  @ApiProperty({ nullable: true })
+  registerStartsAt?: string;
+
+  @ApiProperty({ nullable: true })
+  registerEndsAt?: string;
+
+  @ApiProperty({ nullable: true })
+  startsAt?: string;
+
+  @ApiProperty({ default: 0 })
+  numParticipants: number;
+}
+
+export class ExamDetailDto extends ExamDto {
+  @ApiProperty()
+  id: number;
+
+  @ApiProperty({ default: 0 })
+  numParticipants: number;
 }

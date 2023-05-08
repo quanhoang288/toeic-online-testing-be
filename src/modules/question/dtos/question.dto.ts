@@ -1,29 +1,45 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray } from 'class-validator';
-import { IFile } from 'src/common/models/file';
+import { IsArray, IsNumber, IsOptional, IsString } from 'class-validator';
 import { AnswerDto } from './answer.dto';
 
 export class QuestionDto {
-  examSectionId?: number;
+  sectionId?: number;
 
   questionSetId?: number;
+
+  @ApiProperty()
+  @IsNumber()
+  @IsOptional()
+  id?: number;
 
   @ApiProperty()
   type: string;
 
   @ApiProperty({ nullable: true })
-  text?: string;
+  @IsString()
+  @IsOptional()
+  content?: string;
 
   @ApiProperty({ nullable: true })
-  imageFile?: IFile;
+  imageFileIndex?: number;
 
   @ApiProperty({ nullable: true })
-  imageUrl?: string;
+  imageKey?: string;
 
   @ApiProperty({ nullable: true })
   explanation?: string;
 
   @ApiProperty()
+  @IsNumber()
+  @IsOptional()
+  displayOrder?: number;
+
+  @ApiProperty()
+  @IsNumber()
+  @IsOptional()
+  orderInQuestionSet?: number;
+
+  @ApiProperty({ type: [AnswerDto] })
   @IsArray()
   answers: AnswerDto[];
 }

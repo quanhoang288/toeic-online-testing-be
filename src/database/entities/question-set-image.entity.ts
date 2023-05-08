@@ -10,7 +10,7 @@ export class QuestionSetImageEntity extends AbstractEntity {
   questionSetId: number;
 
   @Column()
-  imageUrl: string;
+  imageKey: string;
 
   @ManyToOne(
     () => QuestionSetEntity,

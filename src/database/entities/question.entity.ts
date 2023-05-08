@@ -10,7 +10,7 @@ import { AbstractEntity } from '../../common/models/abstract.entity';
 import { QuestionSetEntity } from './question-set.entity';
 import { AnswerEntity } from './answer.entity';
 import { QuestionArchiveEntity } from './question-archive.entity';
-import { QuestionGapEntity } from './question-gap.entity';
+import { ExamDetailEntity } from './exam-detail.entity';
 
 export const QUESTION_TABLE_NAME = 'questions';
 
@@ -19,14 +19,17 @@ export class QuestionEntity extends AbstractEntity {
   @Column()
   type: string;
 
-  @Column()
-  text: string;
+  @Column({ nullable: true })
+  content?: string;
 
   @Column({ nullable: true })
-  imageUrl?: string;
+  imageKey?: string;
 
   @Column({ nullable: true })
   questionSetId?: number;
+
+  @Column({ nullable: true })
+  orderInQuestionSet?: number;
 
   @Column({ nullable: true })
   explanation?: string;
@@ -38,9 +41,9 @@ export class QuestionEntity extends AbstractEntity {
   @OneToMany(() => AnswerEntity, (answer) => answer.question)
   answers: AnswerEntity[];
 
-  @OneToMany(() => QuestionGapEntity, (gap) => gap.question)
-  gaps: QuestionGapEntity[];
-
   @ManyToMany(() => QuestionArchiveEntity, (archive) => archive.questions)
   archives: QuestionArchiveEntity[];
+
+  @OneToMany(() => ExamDetailEntity, (examDetail) => examDetail.question)
+  examDetails: ExamDetailEntity[];
 }

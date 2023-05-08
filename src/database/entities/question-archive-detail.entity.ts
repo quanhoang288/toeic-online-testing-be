@@ -17,8 +17,8 @@ export class QuestionArchiveDetailEntity extends AbstractEntity {
   @Column({ nullable: true })
   questionId?: number;
 
-  @Column({ default: true })
-  isEnabled: boolean;
+  @Column()
+  displayIndex: number;
 
   @ManyToOne(() => QuestionArchiveEntity)
   @JoinColumn({ name: 'question_archive_id' })

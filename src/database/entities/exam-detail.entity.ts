@@ -1,9 +1,9 @@
 import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import { AbstractEntity } from '../../common/models/abstract.entity';
 import { ExamEntity } from './exam.entity';
-import { ExamSectionEntity } from './exam-section.entity';
 import { QuestionEntity } from './question.entity';
 import { QuestionSetEntity } from './question-set.entity';
+import { SectionEntity } from './section.entity';
 
 export const EXAM_DETAIL_TABLE_NAME = 'exam_details';
 
@@ -13,7 +13,7 @@ export class ExamDetailEntity extends AbstractEntity {
   examId!: number;
 
   @Column({ nullable: true })
-  examSectionId?: number;
+  sectionId?: number;
 
   @Column({ nullable: true })
   questionId?: number;
@@ -21,13 +21,16 @@ export class ExamDetailEntity extends AbstractEntity {
   @Column({ nullable: true })
   questionSetId?: number;
 
+  @Column({ nullable: true })
+  displayOrder?: number;
+
   @ManyToOne(() => ExamEntity)
   @JoinColumn({ name: 'exam_id' })
   exam: ExamEntity;
 
-  @ManyToOne(() => ExamSectionEntity)
-  @JoinColumn({ name: 'exam_section_id' })
-  examSection: ExamSectionEntity;
+  @ManyToOne(() => SectionEntity)
+  @JoinColumn({ name: 'section_id' })
+  section: SectionEntity;
 
   @ManyToOne(() => QuestionEntity)
   @JoinColumn({ name: 'question_id' })

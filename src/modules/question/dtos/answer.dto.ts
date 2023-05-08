@@ -3,11 +3,14 @@ import { IsBoolean, IsNotEmpty } from 'class-validator';
 
 export class AnswerDto {
   @ApiProperty()
+  id?: number;
+
+  @ApiProperty()
   type: string;
 
   @ApiProperty()
   @IsNotEmpty()
-  text: string;
+  content: string;
 
   @ApiProperty()
   @IsBoolean()
