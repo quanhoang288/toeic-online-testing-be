@@ -7,9 +7,6 @@ export const ANSWER_TABLE_NAME = 'answers';
 @Entity({ name: ANSWER_TABLE_NAME })
 export class AnswerEntity extends AbstractEntity {
   @Column()
-  type!: string;
-
-  @Column()
   content!: string;
 
   @Column({ default: false })
