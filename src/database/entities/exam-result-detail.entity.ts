@@ -1,8 +1,8 @@
 import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import { AbstractEntity } from '../../common/models/abstract.entity';
-import { AccountEntity } from './account.entity';
-import { ExamSectionEntity } from './exam-section.entity';
 import { ExamResultEntity } from './exam-result.entity';
+import { SectionEntity } from './section.entity';
+import { AnswerEntity } from './answer.entity';
 
 export const EXAM_RESULT_DETAIL_TABLE_NAME = 'exam_result_details';
 
@@ -12,7 +12,7 @@ export class ExamResultDetailEntity extends AbstractEntity {
   examResultId: number;
 
   @Column({ nullable: true })
-  examSectionId?: number;
+  sectionId?: number;
 
   @Column()
   questionId!: number;
@@ -23,18 +23,18 @@ export class ExamResultDetailEntity extends AbstractEntity {
   @Column({ nullable: true })
   selectedAnswerId?: number;
 
-  @Column({ nullable: true })
+  @Column()
   isCorrect!: boolean;
 
   @ManyToOne(() => ExamResultEntity)
   @JoinColumn({ name: 'exam_result_id' })
   overallResult: ExamResultEntity;
 
-  @ManyToOne(() => AccountEntity)
-  @JoinColumn({ name: 'account_id' })
-  account: AccountEntity;
+  @ManyToOne(() => SectionEntity)
+  @JoinColumn({ name: 'section_id' })
+  section: SectionEntity;
 
-  @ManyToOne(() => ExamSectionEntity)
-  @JoinColumn({ name: 'exam_section_id' })
-  examSection: ExamSectionEntity;
+  @ManyToOne(() => AnswerEntity)
+  @JoinColumn({ name: 'selected_answer_id' })
+  selectedAnswer: AnswerEntity;
 }

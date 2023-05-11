@@ -1,9 +1,16 @@
-import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
+import {
+  Column,
+  DeleteDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+} from 'typeorm';
 import { AbstractEntity } from '../../common/models/abstract.entity';
 import { ExamRegistrationEntity } from './exam-registration.entity';
 import { ExamSetEntity } from './exam-set.entity';
 import { ExamResultEntity } from './exam-result.entity';
-import { ExamSectionEntity } from './exam-section.entity';
+import { ExamTypeEntity } from './exam-type.entity';
 
 export const EXAM_TABLE_NAME = 'exams';
 
@@ -13,7 +20,7 @@ export class ExamEntity extends AbstractEntity {
   name!: string;
 
   @Column()
-  type!: string; // toeic, ielts,... default toeic only
+  examTypeId!: number;
 
   @Column({ default: true })
   hasMultipleSections!: boolean;
@@ -33,11 +40,11 @@ export class ExamEntity extends AbstractEntity {
   @Column({ nullable: true })
   startsAt?: Date;
 
-  @Column({ nullable: true })
-  numParticipants?: number;
+  @Column({ default: 0 })
+  numParticipants!: number;
 
   @Column({ nullable: true })
-  audio?: string;
+  audioKey?: string;
 
   @OneToMany(() => ExamRegistrationEntity, (registration) => registration.exam)
   registrations: ExamRegistrationEntity[];
@@ -45,10 +52,14 @@ export class ExamEntity extends AbstractEntity {
   @OneToMany(() => ExamResultEntity, (examResult) => examResult.exam)
   overallResults: ExamResultEntity[];
 
-  @OneToMany(() => ExamSectionEntity, (examSection) => examSection.exam)
-  examSections: ExamSectionEntity[];
+  @ManyToOne(() => ExamTypeEntity)
+  @JoinColumn({ name: 'exam_type_id' })
+  examType: ExamTypeEntity;
 
   @ManyToOne(() => ExamSetEntity)
   @JoinColumn({ name: 'exam_set_id' })
   examSet: ExamSetEntity;
+
+  @DeleteDateColumn({ type: 'timestamp', nullable: true })
+  deletedAt?: Date;
 }

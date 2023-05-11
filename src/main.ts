@@ -1,12 +1,19 @@
-import { ValidationPipe } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
+import {
+  HttpStatus,
+  UnprocessableEntityException,
+  ValidationPipe,
+} from '@nestjs/common';
+import { NestFactory, Reflector } from '@nestjs/core';
 import {
   ExpressAdapter,
   NestExpressApplication,
 } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
-import { appConfig } from './config/app.config';
 import { setupSwagger } from './setup-swagger';
+import { SharedModule } from './shared/shared.module';
+import { AppConfigService } from './shared/services/app-config.service';
+import { AllExceptionsFilter } from './filters/all-exceptions.filter';
+import { HttpExceptionFilter } from './filters/bad-request.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(
@@ -17,16 +24,32 @@ async function bootstrap() {
 
   app.useGlobalPipes(
     new ValidationPipe({
+      // whitelist: true,
       transform: true,
-      whitelist: true,
+      errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+      dismissDefaultMessages: true,
+      exceptionFactory: (errors) => new UnprocessableEntityException(errors),
     }),
+  );
+
+  const reflector = app.get(Reflector);
+
+  app.useGlobalFilters(
+    new AllExceptionsFilter(),
+    new HttpExceptionFilter(reflector),
   );
 
   app.setGlobalPrefix('api');
 
-  setupSwagger(app);
+  const configService = app.select(SharedModule).get(AppConfigService);
 
-  await app.listen(appConfig.port);
+  const port = configService.appConfig.port;
+
+  if (configService.documentationEnabled) {
+    setupSwagger(app, port);
+  }
+
+  await app.listen(port);
 }
 
 void bootstrap();

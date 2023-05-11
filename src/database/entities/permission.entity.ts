@@ -6,7 +6,7 @@ export const PERMISSION_TABLE_NAME = 'permissions';
 
 @Entity({ name: PERMISSION_TABLE_NAME })
 export class PermissionEntity extends AbstractEntity {
-  @Column()
+  @Column({ unique: true })
   name!: string;
 
   @Column({ nullable: true })

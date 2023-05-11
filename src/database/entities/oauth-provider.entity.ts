@@ -6,7 +6,7 @@ export const OAUTH_PROVIDER_TABLE_NAME = 'oauth_providers';
 
 @Entity({ name: OAUTH_PROVIDER_TABLE_NAME })
 export class OAuthProviderEntity extends AbstractEntity {
-  @Column()
+  @Column({ unique: true })
   name!: string;
 
   @Column({ nullable: true })

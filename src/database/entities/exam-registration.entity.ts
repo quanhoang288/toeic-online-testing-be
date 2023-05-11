@@ -3,9 +3,9 @@ import { AbstractEntity } from '../../common/models/abstract.entity';
 import { ExamEntity } from './exam.entity';
 import { AccountEntity } from './account.entity';
 
-export const EXAM_REGISTRATION = 'exam_registrations';
+export const EXAM_REGISTRATION_TABLE_NAME = 'exam_registrations';
 
-@Entity({ name: EXAM_REGISTRATION })
+@Entity({ name: EXAM_REGISTRATION_TABLE_NAME })
 export class ExamRegistrationEntity extends AbstractEntity {
   @Column()
   examId!: number;

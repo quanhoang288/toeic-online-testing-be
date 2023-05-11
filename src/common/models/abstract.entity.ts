@@ -1,4 +1,9 @@
-import { BaseEntity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  BaseEntity,
+  CreateDateColumn,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 export abstract class AbstractEntity<
   PK extends number = number,
@@ -6,9 +11,9 @@ export abstract class AbstractEntity<
   @PrimaryGeneratedColumn()
   id: PK;
 
-  @Column()
+  @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;
 
-  @Column()
+  @UpdateDateColumn({ type: 'timestamp' })
   updatedAt: Date;
 }

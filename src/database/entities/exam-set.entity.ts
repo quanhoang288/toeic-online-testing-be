@@ -6,7 +6,7 @@ export const EXAM_SET_TABLE_NAME = 'exam_sets';
 
 @Entity({ name: EXAM_SET_TABLE_NAME })
 export class ExamSetEntity extends AbstractEntity {
-  @Column()
+  @Column({ unique: true })
   title: string;
 
   @Column({ nullable: true })

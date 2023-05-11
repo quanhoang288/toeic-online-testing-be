@@ -1,7 +1,15 @@
-import { Column, Entity, JoinTable, ManyToMany } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  JoinTable,
+  ManyToMany,
+  ManyToOne,
+} from 'typeorm';
 import { AbstractEntity } from '../../common/models/abstract.entity';
 import { QuestionSetEntity } from './question-set.entity';
 import { QuestionEntity } from './question.entity';
+import { SectionEntity } from './section.entity';
 import { AccountEntity } from './account.entity';
 
 export const QUESTION_ARCHIVE_TABLE_NAME = 'question_archives';
@@ -11,8 +19,15 @@ export class QuestionArchiveEntity extends AbstractEntity {
   @Column({ unique: true })
   name: string;
 
+  @Column({ nullable: true })
+  description?: string;
+
   @Column()
-  type: string;
+  sectionId!: number;
+
+  @ManyToOne(() => SectionEntity, (section) => section.questionArchives)
+  @JoinColumn({ name: 'section_id' })
+  section: SectionEntity;
 
   @ManyToMany(() => QuestionSetEntity, (questionSet) => questionSet.archives)
   @JoinTable({
