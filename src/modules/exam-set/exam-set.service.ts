@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, Like, Repository } from 'typeorm';
 import { ExamSetDto } from './dtos/exam-set.dto';
 import { ExamSetEntity } from '../../database/entities/exam-set.entity';
 
@@ -28,5 +28,14 @@ export class ExamSetService {
       ...examSetDto,
       id: createdExamSet.id,
     };
+  }
+
+  async list(title?: string): Promise<ExamSetDto[]> {
+    const where: FindOptionsWhere<ExamSetEntity> = {};
+    if (title) {
+      where.title = Like(title);
+    }
+
+    return this.examSetRepository.find({ where });
   }
 }

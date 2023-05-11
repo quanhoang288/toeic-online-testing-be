@@ -6,9 +6,6 @@ export class AnswerDto {
   id?: number;
 
   @ApiProperty()
-  type: string;
-
-  @ApiProperty()
   @IsNotEmpty()
   content: string;
 
