@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { SharedModule } from './shared/shared.module';
 import { ExamModule } from './modules/exam/exam.module';
 import { default as config } from './config';
+import { FileModule } from './modules/file/file.module';
 // import { SqsModule } from '@ssut/nestjs-sqs';
 // import { AppConfigService } from './shared/services/app-config.service';
 
@@ -21,6 +22,7 @@ import { default as config } from './config';
     //   }),
     // }),
     ExamModule,
+    FileModule,
   ],
 })
 export class AppModule {}
