@@ -39,7 +39,7 @@ async function bootstrap() {
     new HttpExceptionFilter(reflector),
   );
 
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix('api', { exclude: ['files'] });
 
   const configService = app.select(SharedModule).get(AppConfigService);
 
