@@ -23,6 +23,9 @@ export class QuestionEntity extends AbstractEntity {
   content?: string;
 
   @Column({ nullable: true })
+  audioKey?: string;
+
+  @Column({ nullable: true })
   imageKey?: string;
 
   @Column({ nullable: true })

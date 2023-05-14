@@ -6,6 +6,7 @@ import { default as config } from './config';
 import { FileModule } from './modules/file/file.module';
 import { ExamSetModule } from './modules/exam-set/exam-set.module';
 import { ExamTypeModule } from './modules/exam-type/exam-type.module';
+import { QuestionArchiveModule } from './modules/question-archive/question-archive.module';
 // import { SqsModule } from '@ssut/nestjs-sqs';
 // import { AppConfigService } from './shared/services/app-config.service';
 
@@ -24,6 +25,7 @@ import { ExamTypeModule } from './modules/exam-type/exam-type.module';
     //   }),
     // }),
     ExamModule,
+    QuestionArchiveModule,
     ExamSetModule,
     ExamTypeModule,
     FileModule,

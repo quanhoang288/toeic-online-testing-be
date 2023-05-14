@@ -18,7 +18,7 @@ export class QuestionArchiveDetailEntity extends AbstractEntity {
   questionId?: number;
 
   @Column()
-  displayIndex: number;
+  displayOrder: number;
 
   @ManyToOne(() => QuestionArchiveEntity)
   @JoinColumn({ name: 'question_archive_id' })

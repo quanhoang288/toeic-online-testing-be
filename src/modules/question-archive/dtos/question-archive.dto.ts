@@ -1,23 +1,37 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsNotEmpty, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { QuestionSetDto } from 'src/modules/question/dtos/question-set.dto';
 import { QuestionDto } from 'src/modules/question/dtos/question.dto';
 
 export class QuestionArchiveDto {
+  @ApiProperty()
+  @IsNumber()
+  @IsOptional()
+  id?: number;
+
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
   name!: string;
 
   @ApiProperty()
-  @IsString()
-  type!: string;
+  @IsNumber()
+  @IsNotEmpty()
+  sectionId!: number;
 
-  @ApiProperty()
+  @ApiProperty({ type: [QuestionDto], required: false })
   @IsArray()
-  questions: QuestionDto[];
+  @IsOptional()
+  questions?: QuestionDto[];
 
-  @ApiProperty()
+  @ApiProperty({ type: [QuestionSetDto], required: false })
   @IsArray()
-  questionSets: QuestionSetDto[];
+  @IsOptional()
+  questionSets?: QuestionSetDto[];
 }

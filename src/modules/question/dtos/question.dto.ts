@@ -21,7 +21,13 @@ export class QuestionDto {
   content?: string;
 
   @ApiProperty({ nullable: true })
+  audioFileIndex?: number;
+
+  @ApiProperty({ nullable: true })
   imageFileIndex?: number;
+
+  @ApiProperty({ nullable: true })
+  audioKey?: string;
 
   @ApiProperty({ nullable: true })
   imageKey?: string;

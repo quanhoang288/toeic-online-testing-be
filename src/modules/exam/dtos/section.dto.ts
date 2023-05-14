@@ -15,27 +15,27 @@ export class ExamSectionDto {
   @IsNotEmpty()
   id: number;
 
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
   name?: string;
 
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @IsNumber()
   @IsOptional()
   orderInExam?: number;
 
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @IsOptional()
   @IsNumber()
   numQuestions?: number;
 
-  @ApiProperty({ nullable: true, type: [QuestionDto] })
+  @ApiProperty({ nullable: true, required: false, type: [QuestionDto] })
   @IsOptional()
   @IsArray()
   questions?: QuestionDto[];
 
-  @ApiProperty({ nullable: true, type: [QuestionSetDto] })
+  @ApiProperty({ nullable: true, required: false, type: [QuestionSetDto] })
   @IsOptional()
   @IsArray()
   questionSets?: QuestionSetDto[];
