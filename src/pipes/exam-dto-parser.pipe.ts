@@ -10,8 +10,6 @@ export class ExamDtoParser implements PipeTransform {
   ): Partial<ExamDto> {
     const transformedDto: Partial<ExamDto> = { ...value };
 
-    console.log(transformedDto.sections);
-
     transformedDto.sections = _.isString(transformedDto.sections)
       ? JSON.parse(transformedDto.sections)
       : transformedDto.sections;

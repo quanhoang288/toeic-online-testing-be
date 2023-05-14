@@ -15,7 +15,7 @@ export class createQuestionArchiveDetailsTable1683453715054
             \`question_archive_id\` int NOT NULL,
             \`question_set_id\` int NULL,
             \`question_id\` int NULL,
-            \`display_index\` int NOT NULL,
+            \`display_order\` int NOT NULL,
             \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
             \`updated_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
             \`deleted_at\` timestamp(6) NULL,

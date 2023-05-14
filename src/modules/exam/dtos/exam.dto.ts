@@ -21,27 +21,27 @@ export class ExamDto {
   @IsNotEmpty()
   examTypeId: number;
 
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @IsBoolean()
   @IsOptional()
   hasMultipleSections: boolean;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ nullable: true, required: false })
   @IsNumber()
   @IsOptional()
   timeLimitInMins?: number;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ nullable: true, required: false })
   @IsDate()
   @IsOptional()
   registerStartsAt?: string;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ nullable: true, required: false })
   @IsDate()
   @IsOptional()
   registerEndsAt?: string;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ nullable: true, required: false })
   @IsDate()
   @IsOptional()
   startsAt?: string;
@@ -63,13 +63,13 @@ export class ExamListItemDto {
   @ApiProperty()
   type: string;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ nullable: true, required: false })
   registerStartsAt?: string;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ nullable: true, required: false })
   registerEndsAt?: string;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ nullable: true, required: false })
   startsAt?: string;
 
   @ApiProperty({ default: 0 })

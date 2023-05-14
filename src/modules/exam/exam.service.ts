@@ -228,6 +228,11 @@ export class ExamService {
                 orderInQuestionSet: question.orderInQuestionSet ?? questionIdx,
                 displayOrder: question.displayOrder ?? questionIdx,
                 sectionId: sections[idx].id,
+                audioKey:
+                  question.audioFileIndex != undefined &&
+                  question.audioFileIndex < audioKeys.length
+                    ? audioKeys[question.audioFileIndex]
+                    : null,
                 imageKey:
                   question.imageFileIndex != undefined &&
                   question.imageFileIndex < imageKeys.length
@@ -369,6 +374,11 @@ export class ExamService {
                   question.id,
                   {
                     ...question,
+                    audioKey:
+                      question.audioFileIndex != undefined &&
+                      question.audioFileIndex < audioKeys.length
+                        ? audioKeys[question.audioFileIndex]
+                        : null,
                     imageKey:
                       question.imageFileIndex != undefined &&
                       question.imageFileIndex < imageKeys.length

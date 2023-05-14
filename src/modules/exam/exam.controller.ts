@@ -96,7 +96,7 @@ export class ExamController {
   @ApiOkResponse({ type: ApiResponseDto })
   async update(
     @Param('id', ParseIntPipe) examId: number,
-    @Body() examDto: Partial<ExamDto>,
+    @Body(ExamDtoParser) examDto: Partial<ExamDto>,
     @UploadedFiles()
     files: {
       audios: IFile[];
@@ -104,7 +104,7 @@ export class ExamController {
     },
   ) {
     await this.examService.update(examId, examDto, files);
-    return { message: 'Exam created successfully' };
+    return { message: 'Exam updated successfully' };
   }
 
   @Delete(':id')
