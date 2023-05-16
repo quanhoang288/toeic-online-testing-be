@@ -69,6 +69,7 @@ export class ExamService {
       pageCount: searchParams.perPage,
       totalCount: numRecords,
       data: exams.map((exam) => ({
+        id: exam.id,
         name: exam.name,
         type: exam.examType?.name,
         registerStartsAt: exam.registerStartsAt?.toISOString(),
@@ -253,7 +254,7 @@ export class ExamService {
                 ...questionSet,
                 displayOrder:
                   questionSet.displayOrder ??
-                  examDto.sections[idx].questions.length + questionSetIdx,
+                  examDto.sections[idx].questions?.length + questionSetIdx,
 
                 imageKeys: questionSet.imageFileIndices
                   ? imageKeys.filter((_, idx) =>

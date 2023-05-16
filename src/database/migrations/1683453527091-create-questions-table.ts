@@ -11,7 +11,7 @@ export class createQuestionsTable1683453527091 implements MigrationInterface {
                 \`type\` varchar(255) NOT NULL DEFAULT 'multiple_choice',
                 \`content\` text NULL,
                 \`image_key\` varchar(255) NULL,
-                \`explanation\` varchar(255) NULL,
+                \`explanation\` text NULL,
                 \`question_set_id\` int NULL,
                 \`order_in_question_set\` int NULL,
                 \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
