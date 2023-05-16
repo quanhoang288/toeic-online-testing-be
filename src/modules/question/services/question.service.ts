@@ -29,6 +29,7 @@ export class QuestionService {
         'type',
         'content',
         'imageKey',
+        'audioKey',
         'explanation',
         'questionSetId',
         'orderInQuestionSet',

@@ -21,7 +21,7 @@ export class QuestionSetEntity extends AbstractEntity {
   @OneToMany(() => QuestionEntity, (question) => question.questionSet)
   questions: QuestionEntity[];
 
-  @OneToMany(() => QuestionEntity, (image) => image.questionSet)
+  @OneToMany(() => QuestionSetImageEntity, (image) => image.questionSet)
   images: QuestionSetImageEntity[];
 
   @ManyToMany(() => QuestionArchiveEntity, (archive) => archive.questionSets)
