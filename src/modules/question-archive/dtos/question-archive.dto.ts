@@ -9,6 +9,17 @@ import {
 import { QuestionSetDto } from 'src/modules/question/dtos/question-set.dto';
 import { QuestionDto } from 'src/modules/question/dtos/question.dto';
 
+class QuestionArchiveResult {
+  @ApiProperty()
+  id: number;
+
+  @ApiProperty()
+  numCorrects: number;
+
+  @ApiProperty()
+  timeTakenInSecs: number;
+}
+
 export class QuestionArchiveDto {
   @ApiProperty()
   @IsNumber()
@@ -34,4 +45,12 @@ export class QuestionArchiveDto {
   @IsArray()
   @IsOptional()
   questionSets?: QuestionSetDto[];
+
+  @ApiProperty({
+    type: [QuestionArchiveResult],
+    required: false,
+    nullable: true,
+    description: 'Histories for result APIs',
+  })
+  questionArchiveResults?: QuestionArchiveResult[];
 }

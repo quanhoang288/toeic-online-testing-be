@@ -7,6 +7,7 @@ import { ExamService } from './exam.service';
 import { ExamController } from './exam.controller';
 import { QuestionModule } from '../question/question.module';
 import { ExamTypeEntity } from '../../database/entities/exam-type.entity';
+import { ExamResultEntity } from '../../database/entities/exam-result.entity';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { ExamTypeEntity } from '../../database/entities/exam-type.entity';
       ExamDetailEntity,
       SectionEntity,
       ExamTypeEntity,
+      ExamResultEntity,
     ]),
     QuestionModule,
   ],

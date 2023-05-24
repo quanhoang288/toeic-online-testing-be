@@ -76,10 +76,27 @@ export class ExamListItemDto {
   numParticipants: number;
 }
 
+class ExamResult {
+  @ApiProperty()
+  id: number;
+
+  @ApiProperty()
+  isPartial: boolean;
+
+  @ApiProperty()
+  numCorrects: number;
+
+  @ApiProperty()
+  timeTakenInSecs: number;
+}
+
 export class ExamDetailDto extends ExamDto {
   @ApiProperty()
   id: number;
 
   @ApiProperty({ default: 0 })
   numParticipants: number;
+
+  @ApiProperty({ type: [ExamResult], nullable: true, required: false })
+  examResults?: ExamResult[];
 }

@@ -18,6 +18,8 @@ import { QuestionArchiveDto } from './dtos/question-archive.dto';
 import { QuestionArchiveEntity } from '../../database/entities/question-archive.entity';
 import { QuestionArchiveDetailEntity } from '../../database/entities/question-archive-detail.entity';
 import { QuestionArchiveFilterDto } from './dtos/question-archive-filter.dto';
+import { QuestionArchiveAttemptResultDto } from './dtos/question-archive-attempt-result.dto';
+import { QuestionArchiveResultEntity } from '../../database/entities/question-archive-result.entity';
 
 @Injectable()
 export class QuestionArchiveService {
@@ -30,6 +32,8 @@ export class QuestionArchiveService {
     private readonly questionArchiveRepository: Repository<QuestionArchiveEntity>,
     @InjectRepository(QuestionArchiveDetailEntity)
     private readonly questionArchiveDetailRepository: Repository<QuestionArchiveDetailEntity>,
+    @InjectRepository(QuestionArchiveResultEntity)
+    private readonly questionArchiveResultRepository: Repository<QuestionArchiveResultEntity>,
   ) {}
 
   async list(
@@ -58,7 +62,10 @@ export class QuestionArchiveService {
     };
   }
 
-  async show(questionArchiveId: number): Promise<QuestionArchiveDto> {
+  async show(
+    questionArchiveId: number,
+    accountId?: number,
+  ): Promise<QuestionArchiveDto> {
     const questionArchive = await this.questionArchiveRepository.findOne({
       where: { id: questionArchiveId },
       relations: ['section'],
@@ -66,7 +73,15 @@ export class QuestionArchiveService {
     if (!questionArchive) {
       throw new NotFoundException('Exam not found');
     }
-
+    let questionArchiveResults: QuestionArchiveResultEntity[];
+    if (accountId) {
+      questionArchiveResults = await this.questionArchiveResultRepository.find({
+        where: {
+          questionArchiveId,
+          accountId,
+        },
+      });
+    }
     const questionArchiveDetails =
       await this.questionArchiveDetailRepository.find({
         where: {
@@ -92,9 +107,81 @@ export class QuestionArchiveService {
         .sort((d1, d2) => d1.displayOrder - d2.displayOrder)
         .map((detail) => detail.question),
       questionSets: questionArchiveDetails
-        .filter((detail) => detail.questionArchiveId)
+        .filter((detail) => detail.questionSetId)
         .sort((d1, d2) => d1.displayOrder - d2.displayOrder)
-        .map((detail) => detail.questionArchive),
+        .map((detail) => detail.questionSet),
+      questionArchiveResults,
+    };
+  }
+
+  async getAttemptResult(
+    questionArchiveResultId: number,
+  ): Promise<QuestionArchiveAttemptResultDto> {
+    const questionArchiveResult =
+      await this.questionArchiveResultRepository.findOne({
+        where: {
+          id: questionArchiveResultId,
+        },
+        relations: {
+          detailResults: true,
+        },
+      });
+    if (!questionArchiveResult) {
+      throw new NotFoundException('Question archive result not found');
+    }
+
+    const questionArchiveResultsByQuestion = new Map<
+      number,
+      { selectedAnswerId: number; isCorrect: boolean }
+    >();
+    for (const detailResult of questionArchiveResult.detailResults || []) {
+      questionArchiveResultsByQuestion.set(detailResult.questionId, {
+        selectedAnswerId: detailResult.selectedAnswerId,
+        isCorrect: detailResult.isCorrect,
+      });
+    }
+
+    const questionArchiveDetails =
+      await this.questionArchiveDetailRepository.find({
+        where: {
+          questionArchiveId: questionArchiveResult.questionArchiveId,
+        },
+        relations: {
+          question: {
+            answers: true,
+          },
+          questionSet: {
+            questions: {
+              answers: true,
+            },
+            images: true,
+          },
+        },
+      });
+
+    return {
+      id: questionArchiveResultId,
+      questionArchiveId: questionArchiveResult.questionArchiveId,
+      accountId: questionArchiveResult.accountId,
+      numCorrects: questionArchiveResult.numCorrects,
+      timeTakenInSecs: questionArchiveResult.timeTakenInSecs,
+      questions: questionArchiveDetails
+        .filter((detail) => detail.questionId)
+        .sort((d1, d2) => d1.displayOrder - d2.displayOrder)
+        .map((detail) => ({
+          ...detail.question,
+          ...questionArchiveResultsByQuestion.get(detail.questionId),
+        })),
+      questionSets: questionArchiveDetails
+        .filter((detail) => detail.questionSetId)
+        .sort((d1, d2) => d1.displayOrder - d2.displayOrder)
+        .map((detail) => ({
+          ...detail.questionSet,
+          questions: detail.questionSet.questions.map((question) => ({
+            ...question,
+            ...questionArchiveResultsByQuestion.get(detail.questionId),
+          })),
+        })),
     };
   }
 

@@ -32,6 +32,7 @@ import { QuestionArchiveFilterDto } from './dtos/question-archive-filter.dto';
 import { QuestionArchiveDto } from './dtos/question-archive.dto';
 import { QuestionArchiveDtoParser } from '../../pipes/question-archive-dto-parser.pipe';
 import { QuestionArchiveUploadDto } from './dtos/swagger/question-archive-upload.dto';
+import { QuestionArchiveAttemptResultDto } from './dtos/question-archive-attempt-result.dto';
 
 @Controller('question-archives')
 @ApiTags('question-archives')
@@ -67,6 +68,18 @@ export class QuestionArchiveController {
   @ApiOkResponse({ type: QuestionArchiveDto })
   async show(@Param('id', ParseIntPipe) questionArchiveId: number) {
     return this.questionArchiveService.show(questionArchiveId);
+  }
+
+  @Get(':id/results/:questionArchiveResultId')
+  @ApiOkResponse({ type: QuestionArchiveAttemptResultDto })
+  async getQuestionArchiveResultDetail(
+    @Param('id', ParseIntPipe) questionArchiveId: number,
+    @Param('questionArchiveResultId', ParseIntPipe)
+    questionArchiveResultId: number,
+  ) {
+    return this.questionArchiveService.getAttemptResult(
+      questionArchiveResultId,
+    );
   }
 
   @Post()

@@ -31,6 +31,8 @@ import { PaginationDto } from '../../common/dtos/pagination.dto';
 import { ExamFilterDto } from './dtos/exam-filter.dto';
 import { ExamSectionDto } from './dtos/section.dto';
 import { Order } from '../../common/constants/order';
+import { ExamResultEntity } from '../../database/entities/exam-result.entity';
+import { ExamAttemptResultDto } from './dtos/exam-attempt-result.dto';
 
 @Injectable()
 export class ExamService {
@@ -43,6 +45,8 @@ export class ExamService {
     private readonly examRepository: Repository<ExamEntity>,
     @InjectRepository(ExamDetailEntity)
     private readonly examDetailRepository: Repository<ExamDetailEntity>,
+    @InjectRepository(ExamResultEntity)
+    private readonly examResultRepository: Repository<ExamResultEntity>,
   ) {}
 
   async list(
@@ -80,7 +84,7 @@ export class ExamService {
     };
   }
 
-  async show(examId: number): Promise<ExamDetailDto> {
+  async show(examId: number, accountId?: number): Promise<ExamDetailDto> {
     const exam = await this.examRepository.findOne({
       where: { id: examId },
       relations: {
@@ -109,6 +113,16 @@ export class ExamService {
         },
       },
     });
+
+    let examResults: ExamResultEntity[];
+    if (accountId) {
+      examResults = await this.examResultRepository.find({
+        where: {
+          examId,
+          accountId,
+        },
+      });
+    }
 
     const examDetailBySections: ExamSectionDto[] = [];
     for (const examSection of exam.examType.sections) {
@@ -153,6 +167,7 @@ export class ExamService {
       startsAt: exam.startsAt?.toISOString(),
       numParticipants: exam.numParticipants,
       sections: examDetailBySections,
+      examResults,
     };
   }
 
@@ -435,6 +450,129 @@ export class ExamService {
     }
 
     await this.examRepository.softDelete(examId);
+  }
+
+  async getAttemptResult(examResultId: number): Promise<ExamAttemptResultDto> {
+    const examResult = await this.examResultRepository.findOne({
+      where: {
+        id: examResultId,
+      },
+      relations: {
+        detailResults: true,
+        exam: {
+          examType: {
+            sections: true,
+          },
+        },
+      },
+    });
+    if (!examResult) {
+      throw new NotFoundException('Exam result not found');
+    }
+
+    const examResultsByQuestion = new Map<
+      number,
+      { selectedAnswerId: number; isCorrect: boolean }
+    >();
+    for (const detailResult of examResult.detailResults || []) {
+      examResultsByQuestion.set(detailResult.questionId, {
+        selectedAnswerId: detailResult.selectedAnswerId,
+        isCorrect: detailResult.isCorrect,
+      });
+    }
+
+    const examDetails = await this.examDetailRepository.find({
+      where: {
+        examId: examResult.examId,
+      },
+      relations: {
+        question: {
+          answers: true,
+        },
+        questionSet: {
+          questions: {
+            answers: true,
+          },
+          images: true,
+        },
+      },
+    });
+
+    const examResultDetailBySections: ExamSectionDto[] = [];
+    for (const examSection of examResult.exam.examType.sections) {
+      const questions = examDetails
+        .filter(
+          (examDetail) =>
+            examDetail.questionId && examDetail.sectionId === examSection.id,
+        )
+        .map((examDetail) => ({
+          ...examDetail.question,
+          displayOrder: examDetail.displayOrder,
+        }));
+      const questionSets = examDetails
+        .filter(
+          (examDetail) =>
+            examDetail.questionSetId && examDetail.sectionId === examSection.id,
+        )
+        .map((examDetail) => ({
+          ...examDetail.questionSet,
+          displayOrder: examDetail.displayOrder,
+        }));
+      examResultDetailBySections.push({
+        id: examSection.id,
+        name: examSection.name,
+        numQuestions: examSection.numQuestions,
+        numCorrects:
+          questions.filter(
+            (question) => examResultsByQuestion.get(question.id).isCorrect,
+          ).length +
+          questionSets.reduce(
+            (numCorrectQuestions, curQuestionSet) =>
+              numCorrectQuestions +
+              curQuestionSet.questions.filter(
+                (question) => examResultsByQuestion.get(question.id).isCorrect,
+              ).length,
+            0,
+          ),
+        questions: questions
+          .map((question) => ({
+            ...question,
+            ...examResultsByQuestion.get(question.id),
+            displayOrder: question.displayOrder,
+          }))
+          .sort(
+            (question1, question2) =>
+              (question1.displayOrder ?? 0) - (question2.displayOrder ?? 0),
+          ),
+        questionSets: questionSets
+          .map((questionSet) => ({
+            ...questionSet,
+            questions: questionSet.questions
+              .sort(
+                (question1, question2) =>
+                  (question1.orderInQuestionSet ?? 0) -
+                  (question2.orderInQuestionSet ?? 0),
+              )
+              .map((question) => ({
+                ...question,
+                ...examResultsByQuestion.get(question.id),
+              })),
+            displayOrder: questionSet.displayOrder,
+          }))
+          .sort(
+            (qs1, qs2) => (qs1.displayOrder ?? 0) - (qs2.displayOrder ?? 0),
+          ),
+      });
+    }
+
+    return {
+      id: examResultId,
+      examId: examResult.examId,
+      numCorrects: examResult.numCorrects,
+      isPartial: examResult.isPartial,
+      timeTakenInSecs: examResult.timeTakenInSecs,
+      sections: examResultDetailBySections,
+    };
   }
 
   private parseSearchParams(
