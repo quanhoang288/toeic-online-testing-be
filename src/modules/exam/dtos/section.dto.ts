@@ -39,4 +39,13 @@ export class ExamSectionDto {
   @IsOptional()
   @IsArray()
   questionSets?: QuestionSetDto[];
+
+  @ApiProperty({
+    nullable: true,
+    required: false,
+    description:
+      'Number of correct questions within exam section. Used for exam result API',
+  })
+  @IsOptional()
+  numCorrects?: number;
 }

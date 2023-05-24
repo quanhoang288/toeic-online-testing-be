@@ -32,6 +32,7 @@ import { ExamDtoParser } from '../../pipes/exam-dto-parser.pipe';
 import { PaginationDto } from '../../common/dtos/pagination.dto';
 import { ExamUploadDto } from './dtos/swagger/exam-upload.dto';
 import { ApiResponseDto } from '../../common/dtos/api-response.dto';
+import { ExamAttemptResultDto } from './dtos/exam-attempt-result.dto';
 
 @Controller('exams')
 @ApiTags('exams')
@@ -65,6 +66,15 @@ export class ExamController {
   @ApiOkResponse({ type: ExamDetailDto })
   async show(@Param('id', ParseIntPipe) examId: number) {
     return this.examService.show(examId);
+  }
+
+  @Get(':id/results/:examResultId')
+  @ApiOkResponse({ type: ExamAttemptResultDto })
+  async getExamResultDetail(
+    @Param('id', ParseIntPipe) examId: number,
+    @Param('examResultId', ParseIntPipe) examResultId: number,
+  ) {
+    return this.examService.getAttemptResult(examResultId);
   }
 
   @Post()

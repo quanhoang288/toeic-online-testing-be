@@ -17,6 +17,9 @@ export class ExamResultEntity extends AbstractEntity {
   @Column({ default: false })
   isVirtual!: boolean;
 
+  @Column({ default: false })
+  isPartial!: boolean;
+
   @Column()
   numCorrects!: number;
 

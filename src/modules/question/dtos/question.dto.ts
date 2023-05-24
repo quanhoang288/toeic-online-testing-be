@@ -48,4 +48,15 @@ export class QuestionDto {
   @ApiProperty({ type: [AnswerDto] })
   @IsArray()
   answers: AnswerDto[];
+
+  @ApiProperty({ description: 'Selected answer. Used for exam result APIs' })
+  @IsOptional()
+  selectedAnswerId?: number;
+
+  @ApiProperty({
+    description:
+      'Flag indicating whether selected answer is correct or not. Used for exam result APIs',
+  })
+  @IsOptional()
+  isCorrect?: boolean;
 }

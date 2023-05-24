@@ -12,6 +12,7 @@ export class createExamResultsTable1683453647307 implements MigrationInterface {
                 \`exam_id\` int NOT NULL,
                 \`account_id\` int NOT NULL,
                 \`is_virtual\` tinyint(2) NOT NULL DEFAULT 0,
+                \`is_partial\` tinyint(2) NOT NULL DEFAULT 0,
                 \`num_corrects\` int NULL,
                 \`time_taken_in_secs\` int NOT NULL,
                 \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),

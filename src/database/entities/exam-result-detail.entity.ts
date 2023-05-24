@@ -3,6 +3,7 @@ import { AbstractEntity } from '../../common/models/abstract.entity';
 import { ExamResultEntity } from './exam-result.entity';
 import { SectionEntity } from './section.entity';
 import { AnswerEntity } from './answer.entity';
+import { QuestionEntity } from './question.entity';
 
 export const EXAM_RESULT_DETAIL_TABLE_NAME = 'exam_result_details';
 
@@ -33,6 +34,10 @@ export class ExamResultDetailEntity extends AbstractEntity {
   @ManyToOne(() => SectionEntity)
   @JoinColumn({ name: 'section_id' })
   section: SectionEntity;
+
+  @ManyToOne(() => QuestionEntity)
+  @JoinColumn({ name: 'question_id' })
+  question: QuestionEntity;
 
   @ManyToOne(() => AnswerEntity)
   @JoinColumn({ name: 'selected_answer_id' })
