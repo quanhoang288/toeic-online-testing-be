@@ -6,6 +6,8 @@ import { AnswerEntity } from '../../database/entities/answer.entity';
 import { QuestionSetService } from './services/question-set.service';
 import { QuestionSetImageEntity } from '../../database/entities/question-set-image.entity';
 import { QuestionSetEntity } from '../../database/entities/question-set.entity';
+import { ExamDetailEntity } from '../../database/entities/exam-detail.entity';
+import { QuestionArchiveDetailEntity } from '../../database/entities/question-archive-detail.entity';
 
 const providers = [QuestionService, QuestionSetService];
 
@@ -17,6 +19,8 @@ const providers = [QuestionService, QuestionSetService];
       QuestionSetEntity,
       QuestionSetImageEntity,
       AnswerEntity,
+      ExamDetailEntity,
+      QuestionArchiveDetailEntity,
     ]),
   ],
   exports: providers,

@@ -33,6 +33,7 @@ import { ExamSectionDto } from './dtos/section.dto';
 import { Order } from '../../common/constants/order';
 import { ExamResultEntity } from '../../database/entities/exam-result.entity';
 import { ExamAttemptResultDto } from './dtos/exam-attempt-result.dto';
+import _ from 'lodash';
 
 @Injectable()
 export class ExamService {
@@ -331,7 +332,12 @@ export class ExamService {
       images: IFile[];
     },
   ): Promise<void> {
-    const exam = await this.examRepository.findOneBy({ id: examId });
+    const exam = await this.examRepository.findOne({
+      where: { id: examId },
+      relations: {
+        details: true,
+      },
+    });
     if (!exam) {
       throw new BadRequestException('Exam not found');
     }
@@ -351,19 +357,19 @@ export class ExamService {
 
     if (assetFiles) {
       audioKeys = await Promise.all(
-        assetFiles.audios.map((audioFile) =>
+        (assetFiles.audios || []).map((audioFile) =>
           this.s3Service.uploadFile(audioFile, 'audios'),
         ),
       );
       imageKeys = await Promise.all(
-        assetFiles.images.map((imageFile) =>
+        (assetFiles.images || []).map((imageFile) =>
           this.s3Service.uploadFile(imageFile, 'images'),
         ),
       );
     }
 
     await Promise.all(
-      [...assetFiles.audios, ...assetFiles.images].map((file) =>
+      [...(assetFiles.audios || []), ...(assetFiles.images || [])].map((file) =>
         deleteFileAsync(file.path),
       ),
     );
@@ -372,60 +378,187 @@ export class ExamService {
       async (queryRunner: QueryRunner) => {
         await queryRunner.manager.getRepository(ExamEntity).save({
           id: examId,
-          name: updateData.name,
-          examTypeId: updateData.examTypeId,
-          hasMultipleSections: updateData.hasMultipleSections || true,
-          timeLimitInMins: updateData.timeLimitInMins,
-          registerStartsAt: updateData.registerStartsAt,
-          registerEndsAt: updateData.registerEndsAt,
-          startsAt: updateData.startsAt,
-          examSetId: updateData.examSetId,
+          ..._.omitBy(
+            _.pick(updateData, [
+              'name',
+              'timeLimitInMins',
+              'registerStartsAt',
+              'registerEndsAt',
+              'startsAt',
+              'numParticipant',
+              'audioKey',
+              'examSetId',
+            ]),
+            _.isNil,
+          ),
         });
 
-        await Promise.all(
-          (updateData.sections || []).map((examSection) =>
-            Promise.all([
-              ...(examSection.questions || []).map((question) =>
-                this.questionService.update(
-                  question.id,
-                  {
-                    ...question,
-                    audioKey:
-                      question.audioFileIndex != undefined &&
-                      question.audioFileIndex < audioKeys.length
-                        ? audioKeys[question.audioFileIndex]
-                        : null,
-                    imageKey:
-                      question.imageFileIndex != undefined &&
-                      question.imageFileIndex < imageKeys.length
-                        ? imageKeys[question.imageFileIndex]
-                        : null,
-                  },
-                  queryRunner,
+        const questionsToCreate = updateData.sections.reduce<QuestionDto[]>(
+          (questions, sectionData) => {
+            const sectionQuestions = (sectionData.questions || []).filter(
+              (question) => !question.id,
+            );
+
+            return questions.concat(
+              sectionQuestions.map((question, questionIdx) => ({
+                ...question,
+                orderInQuestionSet: question.orderInQuestionSet ?? questionIdx,
+                displayOrder: question.displayOrder ?? questionIdx,
+                sectionId: sectionData.id,
+                audioKey:
+                  question.audioFileIndex != undefined &&
+                  question.audioFileIndex < audioKeys.length
+                    ? audioKeys[question.audioFileIndex]
+                    : null,
+                imageKey:
+                  question.imageFileIndex != undefined &&
+                  question.imageFileIndex < imageKeys.length
+                    ? imageKeys[question.imageFileIndex]
+                    : null,
+              })),
+            );
+          },
+          [],
+        );
+
+        const questionSetsToCreate = updateData.sections.reduce<
+          QuestionSetDto[]
+        >((questionSets, sectionData) => {
+          const sectionQuestionSets = (sectionData.questionSets ?? []).filter(
+            (questionSet) => !questionSet.id,
+          );
+
+          return questionSets.concat(
+            sectionQuestionSets.map((questionSet, questionSetIdx) => ({
+              ...questionSet,
+              displayOrder:
+                questionSet.displayOrder ??
+                sectionData.questions?.length + questionSetIdx,
+              imageKeys: questionSet.imageFileIndices
+                ? imageKeys.filter((_, idx) =>
+                    questionSet.imageFileIndices.includes(idx),
+                  )
+                : null,
+              audioKey:
+                questionSet.audioFileIndex != undefined &&
+                questionSet.audioFileIndex < audioKeys.length
+                  ? audioKeys[questionSet.audioFileIndex]
+                  : null,
+              sectionId: sectionData.id,
+            })),
+          );
+        }, []);
+        const [createdQuestions, createdQuestionSets] = await Promise.all([
+          this.questionService.bulkCreate(questionsToCreate, queryRunner),
+          this.questionSetService.bulkCreate(questionSetsToCreate, queryRunner),
+        ]);
+
+        // save exam details
+        await queryRunner.manager.getRepository(ExamDetailEntity).save([
+          ...createdQuestions.map((questionId, idx) => ({
+            questionId,
+            sectionId: questionsToCreate[idx].sectionId,
+            examId: exam.id,
+            displayOrder: questionsToCreate[idx].displayOrder,
+          })),
+          ...createdQuestionSets.map((questionSetId, idx) => ({
+            questionSetId,
+            sectionId: questionSetsToCreate[idx].sectionId,
+            examId: exam.id,
+            displayOrder: questionSetsToCreate[idx].displayOrder,
+          })),
+        ]);
+
+        const questionsToRemove = (exam.details || [])
+          .filter(
+            (detail) =>
+              detail.questionId &&
+              !updateData.sections.some((section) =>
+                section.questions.some(
+                  (question) =>
+                    question.id && question.id === detail.questionId,
                 ),
               ),
+          )
+          .map((detail) => detail.questionId);
 
-              ...(examSection.questionSets || []).map((questionSet) =>
-                this.questionSetService.update(
-                  questionSet.id,
-                  {
-                    ...questionSet,
-                    imageKeys: questionSet.imageFileIndices
-                      ? [
-                          ...(questionSet.imageKeys ?? []),
-                          ...imageKeys.filter((_, idx) =>
-                            questionSet.imageFileIndices.includes(idx),
-                          ),
-                        ]
-                      : null,
-                    audioKey:
-                      questionSet.audioFileIndex != undefined &&
-                      questionSet.audioFileIndex < audioKeys.length
-                        ? audioKeys[questionSet.audioFileIndex]
-                        : null,
-                  },
-                  queryRunner,
+        const questionSetsToRemove = (exam.details || [])
+          .filter(
+            (detail) =>
+              detail.questionSetId &&
+              !updateData.sections.some((section) =>
+                section.questionSets.some(
+                  (questionSet) =>
+                    questionSet.id && questionSet.id === detail.questionSetId,
                 ),
+              ),
+          )
+          .map((detail) => detail.questionSetId);
+
+        await Promise.all(
+          (updateData.sections || []).map((examSection, idx) =>
+            Promise.all([
+              ...(examSection.questions || [])
+                .filter((question) => question.id)
+                .map((question, questionIdx) =>
+                  this.questionService.update(
+                    question.id,
+                    {
+                      ...question,
+                      orderInQuestionSet:
+                        question.orderInQuestionSet ?? questionIdx,
+                      displayOrder: question.displayOrder ?? questionIdx,
+                      audioKey:
+                        question.audioFileIndex != undefined &&
+                        question.audioFileIndex < audioKeys.length
+                          ? audioKeys[question.audioFileIndex]
+                          : null,
+                      imageKey:
+                        question.imageFileIndex != undefined &&
+                        question.imageFileIndex < imageKeys.length
+                          ? imageKeys[question.imageFileIndex]
+                          : null,
+                    },
+                    queryRunner,
+                  ),
+                ),
+              ...(examSection.questionSets || [])
+                .filter((questionSet) => questionSet.id)
+                .map((questionSet, questionSetIdx) =>
+                  this.questionSetService.update(
+                    questionSet.id,
+                    {
+                      ...questionSet,
+                      imageKeys: questionSet.imageFileIndices
+                        ? [
+                            ...(questionSet.imageKeys ?? []),
+                            ...imageKeys.filter((_, idx) =>
+                              questionSet.imageFileIndices.includes(idx),
+                            ),
+                          ]
+                        : null,
+                      audioKey:
+                        questionSet.audioFileIndex != undefined &&
+                        questionSet.audioFileIndex < audioKeys.length
+                          ? audioKeys[questionSet.audioFileIndex]
+                          : null,
+                      displayOrder:
+                        questionSet.displayOrder ??
+                        updateData.sections[idx].questions?.length +
+                          questionSetIdx,
+                    },
+                    queryRunner,
+                  ),
+                ),
+              this.questionService.bulkDeleteFromExam(
+                questionsToRemove,
+                examId,
+                queryRunner,
+              ),
+              this.questionSetService.bulkDeleteFromExam(
+                questionSetsToRemove,
+                examId,
+                queryRunner,
               ),
             ]),
           ),
