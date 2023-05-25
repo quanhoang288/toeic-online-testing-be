@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { QueryRunner, Repository } from 'typeorm';
+import { In, QueryRunner, Repository } from 'typeorm';
 import _ from 'lodash';
 
 import { QuestionEntity } from '../../../database/entities/question.entity';
@@ -8,6 +8,8 @@ import { AnswerEntity } from '../../../database/entities/answer.entity';
 import { QuestionDto } from '../dtos/question.dto';
 import { AnswerDto } from '../dtos/answer.dto';
 import { AwsS3Service } from '../../../shared/services/aws-s3.service';
+import { ExamDetailEntity } from '../../../database/entities/exam-detail.entity';
+import { QuestionArchiveDetailEntity } from '../../../database/entities/question-archive-detail.entity';
 
 @Injectable()
 export class QuestionService {
@@ -17,6 +19,10 @@ export class QuestionService {
     private readonly questionRepository: Repository<QuestionEntity>,
     @InjectRepository(AnswerEntity)
     private readonly answerRepository: Repository<AnswerEntity>,
+    @InjectRepository(ExamDetailEntity)
+    private readonly examDetailRepository: Repository<ExamDetailEntity>,
+    @InjectRepository(QuestionArchiveDetailEntity)
+    private readonly questionArchiveDetailRepository: Repository<QuestionArchiveDetailEntity>,
   ) {}
 
   async bulkCreate(
@@ -75,13 +81,82 @@ export class QuestionService {
       return;
     }
 
-    // update audio key
-    if (updateDto.imageKey) {
+    if (updateDto.imageKey && question.imageKey) {
       await this.s3Service.deleteFile(question.imageKey as string);
     }
+    if (updateDto.audioKey && question.audioKey) {
+      await this.s3Service.deleteFile(question.audioKey as string);
+    }
 
-    await queryRunner.manager
-      .getRepository(QuestionEntity)
-      .save({ id: questionId, ...updateDto });
+    await queryRunner.manager.getRepository(QuestionEntity).save({
+      id: questionId,
+      ..._.omitBy(
+        _.pick(updateDto, [
+          'content',
+          'audioKey',
+          'imageKey',
+          'questionSetId',
+          'orderInQuestionSet',
+          'explanation',
+        ]),
+        _.isNil,
+      ),
+    });
+  }
+
+  async bulkDeleteFromExam(
+    questionIds: number[],
+    examId: number,
+    queryRunner?: QueryRunner,
+  ): Promise<void> {
+    if (queryRunner) {
+      await queryRunner.manager.getRepository(ExamDetailEntity).delete({
+        examId,
+        questionId: In(questionIds),
+      });
+      await queryRunner.manager.getRepository(QuestionEntity).delete({
+        id: In(questionIds),
+      });
+    } else {
+      await this.examDetailRepository.manager.transaction(async (manager) => {
+        await manager.getRepository(ExamDetailEntity).delete({
+          examId,
+          questionId: In(questionIds),
+        });
+        await manager.getRepository(QuestionEntity).delete({
+          id: In(questionIds),
+        });
+      });
+    }
+  }
+
+  async bulkDeleteFromQuestionArchive(
+    questionIds: number[],
+    questionArchiveId: number,
+    queryRunner?: QueryRunner,
+  ): Promise<void> {
+    if (queryRunner) {
+      await queryRunner.manager
+        .getRepository(QuestionArchiveDetailEntity)
+        .delete({
+          questionArchiveId,
+          questionId: In(questionIds),
+        });
+      await queryRunner.manager.getRepository(QuestionEntity).delete({
+        id: In(questionIds),
+      });
+    } else {
+      await this.questionArchiveDetailRepository.manager.transaction(
+        async (manager) => {
+          await manager.getRepository(QuestionArchiveDetailEntity).delete({
+            questionArchiveId,
+            questionId: In(questionIds),
+          });
+          await manager.getRepository(QuestionEntity).delete({
+            id: In(questionIds),
+          });
+        },
+      );
+    }
   }
 }

@@ -11,6 +11,7 @@ import { ExamRegistrationEntity } from './exam-registration.entity';
 import { ExamSetEntity } from './exam-set.entity';
 import { ExamResultEntity } from './exam-result.entity';
 import { ExamTypeEntity } from './exam-type.entity';
+import { ExamDetailEntity } from './exam-detail.entity';
 
 export const EXAM_TABLE_NAME = 'exams';
 
@@ -51,6 +52,9 @@ export class ExamEntity extends AbstractEntity {
 
   @OneToMany(() => ExamResultEntity, (examResult) => examResult.exam)
   overallResults: ExamResultEntity[];
+
+  @OneToMany(() => ExamDetailEntity, (examDetail) => examDetail.exam)
+  details: ExamDetailEntity[];
 
   @ManyToOne(() => ExamTypeEntity)
   @JoinColumn({ name: 'exam_type_id' })
