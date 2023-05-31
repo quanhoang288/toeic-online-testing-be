@@ -13,6 +13,9 @@ export class RoleEntity extends AbstractEntity {
   @Column({ nullable: true })
   description?: string;
 
+  @Column({ type: 'tinyint', default: false })
+  isAdmin!: boolean;
+
   @OneToMany(() => AccountEntity, (account) => account.role)
   accounts: AccountEntity[];
 

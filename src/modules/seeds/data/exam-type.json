@@ -1,0 +1,38 @@
+[
+  {
+    "name": "toeic",
+    "readingPoints": 495,
+    "listeningPoints": 495,
+    "totalPoints": 990,
+    "sections": [
+      {
+        "name": "Part 1",
+        "numQuestions": 6
+      },
+      {
+        "name": "Part 2",
+        "numQuestions": 25
+      },
+      {
+        "name": "Part 3",
+        "numQuestions": 39
+      },
+      {
+        "name": "Part 4",
+        "numQuestions": 30
+      },
+      {
+        "name": "Part 5",
+        "numQuestions": 30
+      },
+      {
+        "name": "Part 6",
+        "numQuestions": 16
+      },
+      {
+        "name": "Part 7",
+        "numQuestions": 54
+      }
+    ]
+  }
+]
