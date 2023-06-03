@@ -63,7 +63,7 @@ export class ExamService {
       where: whereCond,
       skip: searchParams.skip,
       take: searchParams.perPage,
-      relations: ['examType'],
+      relations: ['examType', 'examSet'],
       order: {
         id: Order.DESC,
       },
@@ -76,11 +76,13 @@ export class ExamService {
       data: exams.map((exam) => ({
         id: exam.id,
         name: exam.name,
+        examSet: exam.examSet.title,
         type: exam.examType?.name,
         registerStartsAt: exam.registerStartsAt?.toISOString(),
         registerEndsAt: exam.registerEndsAt?.toISOString(),
         startsAt: exam.startsAt?.toISOString(),
         numParticipants: exam.numParticipants || 0,
+        timeLimitInMins: exam.timeLimitInMins,
       })),
     };
   }
@@ -166,6 +168,7 @@ export class ExamService {
       registerStartsAt: exam.registerStartsAt?.toISOString(),
       registerEndsAt: exam.registerEndsAt?.toISOString(),
       startsAt: exam.startsAt?.toISOString(),
+      timeLimitInMins: exam.timeLimitInMins,
       numParticipants: exam.numParticipants,
       sections: examDetailBySections,
       examResults,
@@ -657,13 +660,13 @@ export class ExamService {
         numQuestions: examSection.numQuestions,
         numCorrects:
           questions.filter(
-            (question) => examResultsByQuestion.get(question.id).isCorrect,
+            (question) => examResultsByQuestion.get(question.id)?.isCorrect,
           ).length +
           questionSets.reduce(
             (numCorrectQuestions, curQuestionSet) =>
               numCorrectQuestions +
               curQuestionSet.questions.filter(
-                (question) => examResultsByQuestion.get(question.id).isCorrect,
+                (question) => examResultsByQuestion.get(question.id)?.isCorrect,
               ).length,
             0,
           ),
@@ -714,7 +717,7 @@ export class ExamService {
     const whereCond: FindOptionsWhere<ExamEntity> = {};
 
     if (searchParams.q) {
-      whereCond.name = Like(`%${searchParams}%`);
+      whereCond.name = Like(`%${searchParams.q}%`);
     }
 
     if (searchParams.examSetId) {

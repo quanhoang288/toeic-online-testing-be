@@ -137,7 +137,7 @@ export class QuestionArchiveService {
     for (const detailResult of questionArchiveResult.detailResults || []) {
       questionArchiveResultsByQuestion.set(detailResult.questionId, {
         selectedAnswerId: detailResult.selectedAnswerId,
-        isCorrect: detailResult.isCorrect,
+        isCorrect: detailResult?.isCorrect,
       });
     }
 
@@ -164,7 +164,7 @@ export class QuestionArchiveService {
       questionArchiveId: questionArchiveResult.questionArchiveId,
       accountId: questionArchiveResult.accountId,
       numCorrects: questionArchiveResult.numCorrects,
-      timeTakenInSecs: questionArchiveResult.timeTakenInSecs,
+      timeTakenInSecs: questionArchiveResult?.timeTakenInSecs || 0,
       questions: questionArchiveDetails
         .filter((detail) => detail.questionId)
         .sort((d1, d2) => d1.displayOrder - d2.displayOrder)
@@ -336,25 +336,28 @@ export class QuestionArchiveService {
       );
     }
 
+    const audioAssetFiles = assetFiles.audios || [];
+    const imageAssetFiles = assetFiles.images || [];
+
     // Upload audio and image files to S3
     let audioKeys: string[] = [];
     let imageKeys: string[] = [];
 
     if (assetFiles) {
       audioKeys = await Promise.all(
-        assetFiles.audios.map((audioFile) =>
+        audioAssetFiles.map((audioFile) =>
           this.s3Service.uploadFile(audioFile, 'audios'),
         ),
       );
       imageKeys = await Promise.all(
-        assetFiles.images.map((imageFile) =>
+        imageAssetFiles.map((imageFile) =>
           this.s3Service.uploadFile(imageFile, 'images'),
         ),
       );
     }
 
     await Promise.all(
-      [...assetFiles.audios, ...assetFiles.images].map((file) =>
+      [...audioAssetFiles, ...imageAssetFiles].map((file) =>
         deleteFileAsync(file.path),
       ),
     );
@@ -441,7 +444,7 @@ export class QuestionArchiveService {
     const whereCond: FindOptionsWhere<QuestionArchiveEntity> = {};
 
     if (searchParams.q) {
-      whereCond.name = Like(`%${searchParams}%`);
+      whereCond.name = Like(`%${searchParams.q}%`);
     }
 
     if (searchParams.sectionId) {

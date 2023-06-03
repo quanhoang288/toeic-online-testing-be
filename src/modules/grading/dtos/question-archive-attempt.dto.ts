@@ -15,8 +15,8 @@ export class QuestionArchiveAttemptDto {
 
   @ApiProperty()
   @IsNumber()
-  @IsNotEmpty()
-  timeTakenInSecs: number;
+  @IsOptional()
+  timeTakenInSecs?: number;
 
   @ApiProperty({ required: false, type: [QuestionAttemptDto] })
   @IsArray()

@@ -151,7 +151,7 @@ export class GradingService {
         questionArchiveId,
         accountId: questionArchiveAttemptDto.accountId,
         numCorrects,
-        timeTakenInSecs: questionArchiveAttemptDto.timeTakenInSecs,
+        timeTakenInSecs: questionArchiveAttemptDto?.timeTakenInSecs || 0,
       });
 
     for (const questionArchiveResultDetail of questionArchiveResultDetails) {
