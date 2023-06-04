@@ -22,18 +22,25 @@ export class AccountEntity extends AbstractEntity {
   @Column({ unique: true })
   email!: string;
 
-  @Column()
-  username!: string;
+  @Column({ nullable: true })
+  username?: string;
 
   @Column({ nullable: true })
   avatar?: string;
 
-  @Column()
-  roleId!: number;
-
-  @ManyToOne(() => RoleEntity, (role) => role.accounts)
-  @JoinColumn({ name: 'role_id' })
-  role: RoleEntity;
+  @ManyToMany(() => RoleEntity, (role) => role.accounts)
+  @JoinTable({
+    name: 'account_has_roles',
+    joinColumn: {
+      name: 'account_id',
+      referencedColumnName: 'id',
+    },
+    inverseJoinColumn: {
+      name: 'role_id',
+      referencedColumnName: 'id',
+    },
+  })
+  roles: RoleEntity[];
 
   @ManyToMany(() => OAuthProviderEntity, (provider) => provider.accounts)
   @JoinTable({
@@ -88,4 +95,6 @@ export class AccountEntity extends AbstractEntity {
     (registration) => registration.account,
   )
   examRegistrations: ExamRegistrationEntity[];
+
+  authProvider?: string;
 }

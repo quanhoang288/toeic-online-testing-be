@@ -7,6 +7,7 @@ export class createRoleTable1683452838200 implements MigrationInterface {
        (
          \`id\` int NOT NULL AUTO_INCREMENT,
          \`name\` varchar(255) NOT NULL,
+         \`is_admin\` tinyint(2) NOT NULL DEFAULT 0,
          \`description\` varchar(255) NULL,
          \`is_admin\` tinyint(2) NOT NULL DEFAULT 0,
          \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),

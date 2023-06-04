@@ -1,4 +1,4 @@
-import { Column, Entity, JoinTable, ManyToMany, OneToMany } from 'typeorm';
+import { Column, Entity, JoinTable, ManyToMany } from 'typeorm';
 import { AbstractEntity } from '../../common/models/abstract.entity';
 import { AccountEntity } from './account.entity';
 import { PermissionEntity } from './permission.entity';
@@ -10,13 +10,13 @@ export class RoleEntity extends AbstractEntity {
   @Column({ unique: true })
   name!: string;
 
+  @Column({ type: 'tinyint', default: 0 })
+  isAdmin!: boolean;
+
   @Column({ nullable: true })
   description?: string;
 
-  @Column({ type: 'tinyint', default: false })
-  isAdmin!: boolean;
-
-  @OneToMany(() => AccountEntity, (account) => account.role)
+  @ManyToMany(() => AccountEntity, (account) => account.roles)
   accounts: AccountEntity[];
 
   @ManyToMany(() => PermissionEntity, (permission) => permission.roles)

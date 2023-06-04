@@ -8,6 +8,7 @@ import { ExamSetModule } from './modules/exam-set/exam-set.module';
 import { ExamTypeModule } from './modules/exam-type/exam-type.module';
 import { QuestionArchiveModule } from './modules/question-archive/question-archive.module';
 import { GradingModule } from './modules/grading/grading.module';
+import { AuthModule } from './modules/auth/auth.module';
 // import { SqsModule } from '@ssut/nestjs-sqs';
 // import { AppConfigService } from './shared/services/app-config.service';
 
@@ -25,6 +26,7 @@ import { GradingModule } from './modules/grading/grading.module';
     //     producers: configService.sqsProducersConfig,
     //   }),
     // }),
+    AuthModule,
     ExamModule,
     QuestionArchiveModule,
     ExamSetModule,
