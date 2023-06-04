@@ -15,14 +15,14 @@ export class OAuthProviderEntity extends AbstractEntity {
   @Column({ nullable: true })
   clientSecret?: string;
 
-  @Column()
-  tokenUrl!: string;
+  @Column({ nullable: true })
+  tokenUrl?: string;
 
-  @Column()
-  redirectUrl!: string;
+  @Column({ nullable: true })
+  redirectUrl?: string;
 
-  @Column()
-  userInfoUrl!: string;
+  @Column({ nullable: true })
+  userInfoUrl?: string;
 
   @ManyToMany(() => AccountEntity, (account) => account.providers)
   accounts: AccountEntity[];

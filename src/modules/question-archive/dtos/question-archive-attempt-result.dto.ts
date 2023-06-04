@@ -15,8 +15,8 @@ export class QuestionArchiveAttemptResultDto {
   @ApiProperty()
   numCorrects: number;
 
-  @ApiProperty()
-  timeTakenInSecs: number;
+  @ApiProperty({ nullable: true, required: false })
+  timeTakenInSecs?: number;
 
   @ApiProperty({ type: [QuestionDto] })
   questions: QuestionDto[];

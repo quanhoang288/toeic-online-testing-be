@@ -63,7 +63,7 @@ export class ExamService {
       where: whereCond,
       skip: searchParams.skip,
       take: searchParams.perPage,
-      relations: ['examType'],
+      relations: ['examType', 'examSet'],
       order: {
         id: Order.DESC,
       },
@@ -77,6 +77,7 @@ export class ExamService {
         id: exam.id,
         name: exam.name,
         type: exam.examType?.name,
+        examSet: exam.examSet.title,
         registerStartsAt: exam.registerStartsAt?.toISOString(),
         registerEndsAt: exam.registerEndsAt?.toISOString(),
         startsAt: exam.startsAt?.toISOString(),
@@ -166,6 +167,7 @@ export class ExamService {
       registerStartsAt: exam.registerStartsAt?.toISOString(),
       registerEndsAt: exam.registerEndsAt?.toISOString(),
       startsAt: exam.startsAt?.toISOString(),
+      timeLimitInMins: exam.timeLimitInMins,
       numParticipants: exam.numParticipants,
       sections: examDetailBySections,
       examResults,
@@ -657,13 +659,13 @@ export class ExamService {
         numQuestions: examSection.numQuestions,
         numCorrects:
           questions.filter(
-            (question) => examResultsByQuestion.get(question.id).isCorrect,
+            (question) => examResultsByQuestion.get(question.id)?.isCorrect,
           ).length +
           questionSets.reduce(
             (numCorrectQuestions, curQuestionSet) =>
               numCorrectQuestions +
               curQuestionSet.questions.filter(
-                (question) => examResultsByQuestion.get(question.id).isCorrect,
+                (question) => examResultsByQuestion.get(question.id)?.isCorrect,
               ).length,
             0,
           ),
@@ -701,6 +703,7 @@ export class ExamService {
     return {
       id: examResultId,
       examId: examResult.examId,
+      examName: examResult.exam.name,
       numCorrects: examResult.numCorrects,
       isPartial: examResult.isPartial,
       timeTakenInSecs: examResult.timeTakenInSecs,

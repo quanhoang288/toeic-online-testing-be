@@ -170,7 +170,12 @@ export class QuestionArchiveService {
         .sort((d1, d2) => d1.displayOrder - d2.displayOrder)
         .map((detail) => ({
           ...detail.question,
-          ...questionArchiveResultsByQuestion.get(detail.questionId),
+          isCorrect:
+            questionArchiveResultsByQuestion.get(detail.questionId)
+              ?.isCorrect || false,
+          selectedAnswerId: questionArchiveResultsByQuestion.get(
+            detail.questionId,
+          )?.selectedAnswerId,
         })),
       questionSets: questionArchiveDetails
         .filter((detail) => detail.questionSetId)
@@ -179,7 +184,11 @@ export class QuestionArchiveService {
           ...detail.questionSet,
           questions: detail.questionSet.questions.map((question) => ({
             ...question,
-            ...questionArchiveResultsByQuestion.get(detail.questionId),
+            isCorrect:
+              questionArchiveResultsByQuestion.get(question.id)?.isCorrect ||
+              false,
+            selectedAnswerId: questionArchiveResultsByQuestion.get(question.id)
+              ?.selectedAnswerId,
           })),
         })),
     };

@@ -15,6 +15,18 @@ export class AccountProviderLinkingEntity extends AbstractEntity {
   providerId!: number;
 
   @Column({ nullable: true })
+  firstName?: string;
+
+  @Column({ nullable: true })
+  lastName?: string;
+
+  @Column()
+  name: string;
+
+  @Column({ nullable: true })
+  profileUrl?: string;
+
+  @Column({ nullable: true })
   accessToken?: string;
 
   @Column({ nullable: true })

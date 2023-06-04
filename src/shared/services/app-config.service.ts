@@ -58,6 +58,36 @@ export class AppConfigService {
     };
   }
 
+  get apiClientBaseUrl(): string {
+    return this.getString('API_CLIENT_BASE_URL') || 'http://localhost:3000';
+  }
+
+  get jwtConfig(): {
+    secret: string;
+    accessTokenExpiresIn: number;
+    refreshTokenExpiresIn: number;
+  } {
+    return {
+      secret: this.getString('JWT_SECRET'),
+      accessTokenExpiresIn: this.getNumber('JWT_ACCESS_TOKEN_EXPIRES_IN'),
+      refreshTokenExpiresIn: this.getNumber('JWT_REFRESH_TOKEN_EXPIRES_IN'),
+    };
+  }
+
+  get googleOAuthConfig(): {
+    clientID: string;
+    clientSecret: string;
+    callbackURL: string;
+    scope: string[];
+  } {
+    return {
+      clientID: this.getString('GOOGLE_OAUTH_CLIENT_ID'),
+      clientSecret: this.getString('GOOGLE_OAUTH_CLIENT_SECRET'),
+      callbackURL: this.getString('GOOGLE_OAUTH_REDIRECT_URL'),
+      scope: ['email', 'profile'],
+    };
+  }
+
   get documentationEnabled(): boolean {
     return this.getBoolean('app.enableDocumentation');
   }

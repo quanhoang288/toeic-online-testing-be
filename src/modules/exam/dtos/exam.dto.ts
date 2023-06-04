@@ -64,6 +64,9 @@ export class ExamListItemDto {
   type: string;
 
   @ApiProperty({ nullable: true, required: false })
+  examSet?: string;
+
+  @ApiProperty({ nullable: true, required: false })
   registerStartsAt?: string;
 
   @ApiProperty({ nullable: true, required: false })

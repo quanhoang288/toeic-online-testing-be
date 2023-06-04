@@ -5,7 +5,7 @@ import { Repository } from 'typeorm';
 import { RoleEntity } from 'src/database/entities/role.entity';
 import { SeedBaseService } from './seed-base.service';
 
-const roleData = require('../data/role.json');
+import roleData from '../data/role.json';
 
 @Injectable()
 export class RoleSeedService extends SeedBaseService<RoleEntity> {

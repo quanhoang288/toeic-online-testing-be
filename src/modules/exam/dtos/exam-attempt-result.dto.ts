@@ -9,6 +9,9 @@ export class ExamAttemptResultDto {
   examId: number;
 
   @ApiProperty()
+  examName: string;
+
+  @ApiProperty()
   numCorrects: number;
 
   @ApiProperty({ type: 'boolean' })

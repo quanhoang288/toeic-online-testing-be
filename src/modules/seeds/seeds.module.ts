@@ -5,10 +5,19 @@ import { ExamTypeSeedService } from './services/exam-type-seed.service';
 import { RoleEntity } from 'src/database/entities/role.entity';
 import { ExamTypeEntity } from 'src/database/entities/exam-type.entity';
 import { SeedsService } from './seeds.service';
+import { OAuthProviderEntity } from '../../database/entities/oauth-provider.entity';
+import { OAuthProviderSeedService } from './services/oauth-provider-seed.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([RoleEntity, ExamTypeEntity])],
-  providers: [RoleSeedService, ExamTypeSeedService, SeedsService],
+  imports: [
+    TypeOrmModule.forFeature([RoleEntity, ExamTypeEntity, OAuthProviderEntity]),
+  ],
+  providers: [
+    RoleSeedService,
+    ExamTypeSeedService,
+    OAuthProviderSeedService,
+    SeedsService,
+  ],
   exports: [SeedsService],
 })
 export class SeedsModule {}

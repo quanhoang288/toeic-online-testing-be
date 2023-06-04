@@ -11,6 +11,7 @@ import {
   Put,
   Query,
   UploadedFiles,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import {
@@ -33,6 +34,9 @@ import { PaginationDto } from '../../common/dtos/pagination.dto';
 import { ExamUploadDto } from './dtos/swagger/exam-upload.dto';
 import { ApiResponseDto } from '../../common/dtos/api-response.dto';
 import { ExamAttemptResultDto } from './dtos/exam-attempt-result.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../guards/roles.guard';
+import { AdminRole } from '../../decorators/admin-role.decorator';
 
 @Controller('exams')
 @ApiTags('exams')
@@ -69,6 +73,7 @@ export class ExamController {
   }
 
   @Get(':id/results/:examResultId')
+  @UseGuards(JwtAuthGuard)
   @ApiOkResponse({ type: ExamAttemptResultDto })
   async getExamResultDetail(
     @Param('id', ParseIntPipe) examId: number,
@@ -85,6 +90,8 @@ export class ExamController {
   @ApiConsumes('multipart/form-data')
   @ApiBody({ type: ExamUploadDto })
   @ApiCreatedResponse({ type: ApiResponseDto })
+  @AdminRole()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   async create(
     @Body(ExamDtoParser) examDto: Partial<ExamDto>,
     @UploadedFiles()
@@ -98,6 +105,8 @@ export class ExamController {
   }
 
   @Put(':id')
+  @AdminRole()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @UseInterceptors(
     FileFieldsInterceptor([{ name: 'audios' }, { name: 'images' }]),
   )
@@ -118,6 +127,8 @@ export class ExamController {
   }
 
   @Delete(':id')
+  @AdminRole()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiOkResponse({ type: ApiResponseDto })
   async delete(@Param('id', ParseIntPipe) examId: number) {
     await this.examService.delete(examId);
