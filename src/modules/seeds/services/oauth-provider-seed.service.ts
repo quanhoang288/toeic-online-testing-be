@@ -17,13 +17,24 @@ export class OAuthProviderSeedService extends SeedBaseService<OAuthProviderEntit
   }
 
   public async run(): Promise<void> {
-    await this.getRepository().upsert(
-      (oauthProviderData || []).map((oauthProvider) =>
-        this.getRepository().create(oauthProvider),
-      ),
-      {
-        conflictPaths: ['name'],
-      },
+    console.log('running oauth provider seed');
+    await Promise.all(
+      oauthProviderData.map(async (oauthProvider) => {
+        const existingProvider = await this.getRepository().findOneBy({
+          name: oauthProvider.name,
+        });
+        if (!existingProvider) {
+          await this.getRepository().save(oauthProvider);
+        } else {
+          await this.getRepository().update(
+            { id: existingProvider.id },
+            oauthProvider,
+          );
+        }
+      }),
     );
+
+    console.log('running oauth provider seed done');
+    console.log('================================');
   }
 }

@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import { RoleEntity } from 'src/database/entities/role.entity';
+import { RoleEntity } from '../../../database/entities/role.entity';
 import { SeedBaseService } from './seed-base.service';
 
 import roleData from '../data/role.json';
@@ -17,11 +17,20 @@ export class RoleSeedService extends SeedBaseService<RoleEntity> {
   }
 
   public async run(): Promise<void> {
-    await this.getRepository().upsert(
-      (roleData || []).map((role) => this.getRepository().create(role)),
-      {
-        conflictPaths: ['name'],
-      },
+    console.log('running role seed service');
+    await Promise.all(
+      roleData.map(async (role) => {
+        const existingRole = await this.getRepository().findOneBy({
+          name: role.name,
+        });
+        if (!existingRole) {
+          await this.getRepository().save(role);
+        } else {
+          await this.getRepository().update({ id: existingRole.id }, role);
+        }
+      }),
     );
+    console.log('running role seed service done');
+    console.log('==============================');
   }
 }
