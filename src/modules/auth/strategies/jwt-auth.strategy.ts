@@ -28,8 +28,8 @@ export class JwtAuthStrategy extends PassportStrategy(Strategy) {
 
     return this.authService.validateUser(
       payload.sub,
-      payload.provider as OAuthProvider,
       token,
+      payload.provider as OAuthProvider,
     );
   }
 }

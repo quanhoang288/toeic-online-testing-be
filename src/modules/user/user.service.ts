@@ -1,7 +1,12 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { Repository } from 'typeorm';
-import { AccountEntity } from '../../database/entities/account.entity';
 import { InjectRepository } from '@nestjs/typeorm';
+import bcrypt from 'bcrypt';
+import { AccountEntity } from '../../database/entities/account.entity';
 import { RoleEntity } from '../../database/entities/role.entity';
 import { OAuthProvider } from '../../common/constants/oauth-provider';
 import { OAuthUserProfileDto } from '../auth/dtos/oauth-user-profile.dto';
@@ -9,6 +14,7 @@ import { OAuthProviderEntity } from '../../database/entities/oauth-provider.enti
 import { AccountProviderLinkingEntity } from '../../database/entities/account-provider-linking.entity';
 import { TransactionService } from '../../shared/services/transaction.service';
 import { AccountHasRoleEntity } from '../../database/entities/account-has-role.entity';
+import { UserDto } from './dtos/user.dto';
 
 @Injectable()
 export class UserService {
@@ -37,7 +43,47 @@ export class UserService {
   }
 
   async findOneByEmail(email: string): Promise<AccountEntity | null> {
-    return this.accountRepository.findOneBy({ email });
+    return this.accountRepository.findOne({
+      where: { email },
+      relations: ['roles'],
+    });
+  }
+
+  async create(userDto: UserDto): Promise<AccountEntity> {
+    const existingAccount = await this.accountRepository.findOneBy({
+      email: userDto.email,
+    });
+    if (existingAccount) {
+      throw new BadRequestException('User with given email already exists');
+    }
+
+    const userRole = await this.roleRepository.findOneBy({ name: 'user' });
+    if (!userRole) {
+      throw new InternalServerErrorException('Role not found');
+    }
+
+    let createdAccount: AccountEntity;
+
+    await this.transactionService.runInTransaction(async (queryRunner) => {
+      createdAccount = await queryRunner.manager
+        .getRepository(AccountEntity)
+        .save({
+          ...userDto,
+          password: await bcrypt.hash(userDto.password, 10),
+        });
+
+      await queryRunner.manager.getRepository(AccountHasRoleEntity).save({
+        accountId: createdAccount.id,
+        roleId: userRole.id,
+      });
+      createdAccount.roles = [userRole];
+    });
+
+    if (!createdAccount) {
+      throw new InternalServerErrorException('Error creating new user');
+    }
+
+    return createdAccount;
   }
 
   async findOrCreateFromOAuth(

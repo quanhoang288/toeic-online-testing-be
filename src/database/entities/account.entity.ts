@@ -23,10 +23,25 @@ export class AccountEntity extends AbstractEntity {
   email!: string;
 
   @Column({ nullable: true })
+  password?: string;
+
+  @Column({ nullable: true })
   username?: string;
 
   @Column({ nullable: true })
   avatar?: string;
+
+  @Column({ nullable: true })
+  accessToken?: string;
+
+  @Column({ nullable: true })
+  refreshToken?: string;
+
+  @Column({ nullable: true })
+  accessTokenExpiresAt?: Date;
+
+  @Column({ nullable: true })
+  refreshTokenExpiresAt?: Date;
 
   @ManyToMany(() => RoleEntity, (role) => role.accounts)
   @JoinTable({
