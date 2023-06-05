@@ -1,9 +1,15 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class JwtPayload {
   @IsNotEmpty()
-  @IsString()
-  sub: string;
+  @IsNumber()
+  sub: number;
 
   @IsNotEmpty()
   @IsString()
@@ -12,4 +18,12 @@ export class JwtPayload {
   @IsNotEmpty()
   @IsString()
   email: string;
+
+  @IsOptional()
+  @IsString()
+  provider?: string;
+
+  @IsNotEmpty()
+  @IsArray()
+  roles: string[];
 }

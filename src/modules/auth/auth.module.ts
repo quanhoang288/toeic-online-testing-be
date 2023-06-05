@@ -11,10 +11,12 @@ import { AppConfigService } from '../../shared/services/app-config.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AccountProviderLinkingEntity } from '../../database/entities/account-provider-linking.entity';
 import { OAuthProviderEntity } from '../../database/entities/oauth-provider.entity';
+import { AccountEntity } from '../../database/entities/account.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
+      AccountEntity,
       OAuthProviderEntity,
       AccountProviderLinkingEntity,
     ]),

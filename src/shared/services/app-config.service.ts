@@ -44,6 +44,10 @@ export class AppConfigService {
     return this.getString('app.environment');
   }
 
+  get defaultAdminPassword(): string {
+    return this.getString('ADMIN_USER_DEFAULT_PASSWORD');
+  }
+
   get awsS3Config(): {
     accessKeyId: string;
     secretAccessKey: string;
