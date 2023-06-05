@@ -4,8 +4,8 @@ import { Repository } from 'typeorm';
 import _ from 'lodash';
 
 import { SeedBaseService } from './seed-base.service';
-import { ExamTypeEntity } from 'src/database/entities/exam-type.entity';
-import { SectionEntity } from 'src/database/entities/section.entity';
+import { ExamTypeEntity } from '../../../database/entities/exam-type.entity';
+import { SectionEntity } from '../../../database/entities/section.entity';
 
 import examTypeData from '../data/exam-type.json';
 
@@ -19,31 +19,33 @@ export class ExamTypeSeedService extends SeedBaseService<ExamTypeEntity> {
   }
 
   public async run(): Promise<void> {
+    console.log('running exam type seed service');
+
     const examTypeRepository = this.getRepository();
     await Promise.all(
       (examTypeData || []).map(async (examType) => {
-        let examTypeEntity = await examTypeRepository.findOneBy({
+        const existingExamType = await examTypeRepository.findOneBy({
           name: examType.name,
         });
-        if (!examTypeEntity) {
-          examTypeEntity = await examTypeRepository.save(
+        if (!existingExamType) {
+          const createdExamType = await examTypeRepository.save(
+            _.omitBy(examType, ['sections']),
+          );
+          await examTypeRepository.manager.getRepository(SectionEntity).save(
+            (examType.sections || []).map((section) => ({
+              ...section,
+              examTypeId: createdExamType.id,
+            })),
+          );
+        } else {
+          await examTypeRepository.save(
+            { id: existingExamType.id },
             _.omitBy(examType, ['sections']),
           );
         }
-        const sectionRepository =
-          examTypeRepository.manager.getRepository(SectionEntity);
-        await sectionRepository.upsert(
-          (examType.sections || []).map((section) =>
-            sectionRepository.create({
-              ...section,
-              examTypeId: examTypeEntity.id,
-            }),
-          ),
-          {
-            conflictPaths: ['name'],
-          },
-        );
       }),
     );
+    console.log('running exam type seed service done');
+    console.log('===================================');
   }
 }

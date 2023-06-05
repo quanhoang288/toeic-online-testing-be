@@ -1,9 +1,4 @@
 [
   { "name": "user", "description": "User role", "isAdmin": false },
-  {
-    "name": "premium_user",
-    "description": "User with premium subscription role",
-    "isAdmin": false
-  },
   { "name": "admin", "description": "Admin role", "isAdmin": true }
 ]
