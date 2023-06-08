@@ -149,15 +149,21 @@ export class QuestionSetService {
     queryRunner?: QueryRunner,
   ): Promise<void> {
     if (queryRunner) {
+      await queryRunner.manager.getRepository(QuestionEntity).delete({
+        questionSetId: In(questionSetIds),
+      });
       await queryRunner.manager.getRepository(ExamDetailEntity).delete({
         examId,
         questionId: In(questionSetIds),
       });
-      await queryRunner.manager.getRepository(QuestionEntity).delete({
+      await queryRunner.manager.getRepository(QuestionSetEntity).delete({
         id: In(questionSetIds),
       });
     } else {
       await this.examDetailRepository.manager.transaction(async (manager) => {
+        await manager.getRepository(QuestionEntity).delete({
+          questionSetId: In(questionSetIds),
+        });
         await manager.getRepository(ExamDetailEntity).delete({
           examId,
           questionId: In(questionSetIds),
@@ -175,6 +181,9 @@ export class QuestionSetService {
     queryRunner?: QueryRunner,
   ): Promise<void> {
     if (queryRunner) {
+      await queryRunner.manager.getRepository(QuestionEntity).delete({
+        questionSetId: In(questionSetIds),
+      });
       await queryRunner.manager
         .getRepository(QuestionArchiveDetailEntity)
         .delete({
@@ -187,6 +196,9 @@ export class QuestionSetService {
     } else {
       await this.questionArchiveDetailRepository.manager.transaction(
         async (manager) => {
+          await manager.getRepository(QuestionEntity).delete({
+            questionSetId: In(questionSetIds),
+          });
           await manager.getRepository(QuestionArchiveDetailEntity).delete({
             questionArchiveId,
             questionSetId: In(questionSetIds),

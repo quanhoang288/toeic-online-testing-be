@@ -23,6 +23,15 @@ export class ExamResultEntity extends AbstractEntity {
   @Column()
   numCorrects!: number;
 
+  @Column({ nullable: true })
+  listeningPoints?: number;
+
+  @Column({ nullable: true })
+  readingPoints?: number;
+
+  @Column({ nullable: true })
+  totalPoints?: number;
+
   @Column()
   timeTakenInSecs!: number;
 

@@ -102,6 +102,12 @@ export class QuestionService {
         _.isNil,
       ),
     });
+
+    await Promise.all(
+      (updateDto.answers || []).map((answer) =>
+        queryRunner?.manager.getRepository(AnswerEntity).save(answer),
+      ),
+    );
   }
 
   async bulkDeleteFromExam(

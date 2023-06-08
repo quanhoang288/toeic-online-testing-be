@@ -10,10 +10,14 @@ import {
   Post,
   Put,
   Query,
+  Req,
+  UnauthorizedException,
   UploadedFiles,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiBody,
   ApiConsumes,
   ApiCreatedResponse,
@@ -33,6 +37,12 @@ import { QuestionArchiveDto } from './dtos/question-archive.dto';
 import { QuestionArchiveDtoParser } from '../../pipes/question-archive-dto-parser.pipe';
 import { QuestionArchiveUploadDto } from './dtos/swagger/question-archive-upload.dto';
 import { QuestionArchiveAttemptResultDto } from './dtos/question-archive-attempt-result.dto';
+import { Request as ExpressRequest } from 'express';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { QuestionArchiveResultHistoryDto } from './dtos/question-archive-result-history.dto';
+import { RolesGuard } from '../../guards/roles.guard';
+import { PublicRoute } from '../../decorators/public-route.decorator';
+import { AdminRole } from '../../decorators/admin-role.decorator';
 
 @Controller('question-archives')
 @ApiTags('question-archives')
@@ -66,11 +76,18 @@ export class QuestionArchiveController {
 
   @Get(':id')
   @ApiOkResponse({ type: QuestionArchiveDto })
-  async show(@Param('id', ParseIntPipe) questionArchiveId: number) {
-    return this.questionArchiveService.show(questionArchiveId);
+  @PublicRoute(true)
+  @UseGuards(JwtAuthGuard)
+  async show(
+    @Req() req: ExpressRequest,
+    @Param('id', ParseIntPipe) questionArchiveId: number,
+  ) {
+    return this.questionArchiveService.show(questionArchiveId, req.user?.id);
   }
 
   @Get(':id/results/:questionArchiveResultId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOkResponse({ type: QuestionArchiveAttemptResultDto })
   async getQuestionArchiveResultDetail(
     @Param('id', ParseIntPipe) questionArchiveId: number,
@@ -88,6 +105,9 @@ export class QuestionArchiveController {
   )
   @HttpCode(HttpStatus.CREATED)
   @ApiConsumes('multipart/form-data')
+  @ApiBearerAuth()
+  @AdminRole()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiBody({ type: QuestionArchiveUploadDto })
   @ApiCreatedResponse({ type: ApiResponseDto })
   async create(
@@ -108,6 +128,9 @@ export class QuestionArchiveController {
     FileFieldsInterceptor([{ name: 'audios' }, { name: 'images' }]),
   )
   @ApiConsumes('multipart/form-data')
+  @ApiBearerAuth()
+  @AdminRole()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiBody({ type: QuestionArchiveUploadDto })
   @ApiOkResponse({ type: ApiResponseDto })
   async update(
@@ -129,9 +152,24 @@ export class QuestionArchiveController {
   }
 
   @Delete(':id')
+  @ApiBearerAuth()
+  @AdminRole()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiBody({ type: QuestionArchiveUploadDto })
   @ApiOkResponse({ type: ApiResponseDto })
   async delete(@Param('id', ParseIntPipe) questionArchiveId: number) {
     await this.questionArchiveService.delete(questionArchiveId);
     return { message: 'Question archive deleted successfully' };
+  }
+
+  @Get('/result-histories')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOkResponse({ type: [QuestionArchiveResultHistoryDto] })
+  async getResultHistories(@Req() req: ExpressRequest) {
+    if (!req.user) {
+      throw new UnauthorizedException();
+    }
+    return this.questionArchiveService.getResultHistories(req.user.id);
   }
 }

@@ -14,6 +14,15 @@ export class ExamAttemptResultDto {
   @ApiProperty()
   numCorrects: number;
 
+  @ApiProperty({ nullable: true, required: false })
+  listeningPoints?: number;
+
+  @ApiProperty({ nullable: true, required: false })
+  readingPoints?: number;
+
+  @ApiProperty({ nullable: true, required: false })
+  totalPoints?: number;
+
   @ApiProperty({ type: 'boolean' })
   isPartial: boolean;
 

@@ -7,31 +7,38 @@
     "sections": [
       {
         "name": "Part 1",
-        "numQuestions": 6
+        "numQuestions": 6,
+        "type": "listening"
       },
       {
         "name": "Part 2",
-        "numQuestions": 25
+        "numQuestions": 25,
+        "type": "listening"
       },
       {
         "name": "Part 3",
-        "numQuestions": 39
+        "numQuestions": 39,
+        "type": "listening"
       },
       {
         "name": "Part 4",
-        "numQuestions": 30
+        "numQuestions": 30,
+        "type": "listening"
       },
       {
         "name": "Part 5",
-        "numQuestions": 30
+        "numQuestions": 30,
+        "type": "reading"
       },
       {
         "name": "Part 6",
-        "numQuestions": 16
+        "numQuestions": 16,
+        "type": "reading"
       },
       {
         "name": "Part 7",
-        "numQuestions": 54
+        "numQuestions": 54,
+        "type": "reading"
       }
     ]
   }

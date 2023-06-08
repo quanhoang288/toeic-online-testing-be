@@ -20,6 +20,8 @@ import { QuestionArchiveDetailEntity } from '../../database/entities/question-ar
 import { QuestionArchiveFilterDto } from './dtos/question-archive-filter.dto';
 import { QuestionArchiveAttemptResultDto } from './dtos/question-archive-attempt-result.dto';
 import { QuestionArchiveResultEntity } from '../../database/entities/question-archive-result.entity';
+import { UserService } from '../user/user.service';
+import { QuestionArchiveResultHistoryDto } from './dtos/question-archive-result-history.dto';
 
 @Injectable()
 export class QuestionArchiveService {
@@ -28,6 +30,7 @@ export class QuestionArchiveService {
     private readonly transactionService: TransactionService,
     private readonly questionService: QuestionService,
     private readonly questionSetService: QuestionSetService,
+    private readonly userService: UserService,
     @InjectRepository(QuestionArchiveEntity)
     private readonly questionArchiveRepository: Repository<QuestionArchiveEntity>,
     @InjectRepository(QuestionArchiveDetailEntity)
@@ -201,7 +204,6 @@ export class QuestionArchiveService {
       images: IFile[];
     },
   ): Promise<void> {
-    console.log('asset files:', assetFiles);
     // Validation
     const existingQuestionArchive =
       await this.questionArchiveRepository.findOneBy({
@@ -236,6 +238,14 @@ export class QuestionArchiveService {
       ),
     );
 
+    const numQuestions =
+      (questionArchiveDto.questions?.length || 0) +
+      (questionArchiveDto.questionSets || []).reduce(
+        (numQuestionsInQuestionSet, curQuestionSet) =>
+          numQuestionsInQuestionSet + curQuestionSet.questions.length,
+        0,
+      );
+
     const transactionRes = await this.transactionService.runInTransaction(
       async (queryRunner: QueryRunner) => {
         const createdQuestionArchive = await queryRunner.manager
@@ -243,6 +253,7 @@ export class QuestionArchiveService {
           .save({
             name: questionArchiveDto.name,
             sectionId: questionArchiveDto.sectionId,
+            numQuestions,
           });
 
         const questionsToCreate = questionArchiveDto.questions.map(
@@ -286,9 +297,6 @@ export class QuestionArchiveService {
           this.questionService.bulkCreate(questionsToCreate, queryRunner),
           this.questionSetService.bulkCreate(questionSetsToCreate, queryRunner),
         ]);
-
-        console.log('questions created: ', createdQuestions[0]);
-        console.log('question sets created: ', createdQuestionSets[0]);
 
         // save exam details
         await queryRunner.manager
@@ -368,13 +376,103 @@ export class QuestionArchiveService {
       ),
     );
 
+    const numQuestions =
+      (updateData.questions?.length || 0) +
+      (updateData.questionSets || []).reduce(
+        (numQuestionsInQuestionSet, curQuestionSet) =>
+          numQuestionsInQuestionSet + curQuestionSet.questions.length,
+        0,
+      );
+
     const transactionRes = await this.transactionService.runInTransaction(
       async (queryRunner: QueryRunner) => {
         await queryRunner.manager.getRepository(QuestionArchiveEntity).save({
           id: questionArchiveId,
           name: updateData.name,
+          numQuestions,
           sectionId: updateData.sectionId,
         });
+
+        const questionsToCreate = (updateData.questions || [])
+          .filter((question) => !question.id)
+          .map((question, questionIdx) => ({
+            ...question,
+            orderInQuestionSet: question.orderInQuestionSet ?? questionIdx,
+            displayOrder: question.displayOrder ?? questionIdx,
+            sectionId: updateData.sectionId,
+            audioKey:
+              question.audioFileIndex != undefined &&
+              question.audioFileIndex < audioKeys.length
+                ? audioKeys[question.audioFileIndex]
+                : null,
+            imageKey:
+              question.imageFileIndex != undefined &&
+              question.imageFileIndex < imageKeys.length
+                ? imageKeys[question.imageFileIndex]
+                : null,
+          }));
+
+        const questionSetsToCreate = updateData.questionSets
+          .filter((questionSet) => !questionSet.id)
+          .map((questionSet, questionSetIdx) => ({
+            ...questionSet,
+            displayOrder:
+              questionSet.displayOrder ??
+              (updateData.questions?.length || 0) + questionSetIdx,
+            imageKeys: questionSet.imageFileIndices
+              ? imageKeys.filter((_, idx) =>
+                  questionSet.imageFileIndices.includes(idx),
+                )
+              : null,
+            audioKey:
+              questionSet.audioFileIndex != undefined &&
+              questionSet.audioFileIndex < audioKeys.length
+                ? audioKeys[questionSet.audioFileIndex]
+                : null,
+            sectionId: updateData.sectionId,
+          }));
+
+        const [createdQuestions, createdQuestionSets] = await Promise.all([
+          this.questionService.bulkCreate(questionsToCreate, queryRunner),
+          this.questionSetService.bulkCreate(questionSetsToCreate, queryRunner),
+        ]);
+
+        // save question archive details
+        await queryRunner.manager
+          .getRepository(QuestionArchiveDetailEntity)
+          .save([
+            ...createdQuestions.map((questionId, idx) => ({
+              questionId,
+              questionArchiveId,
+              displayOrder: questionsToCreate[idx].displayOrder,
+            })),
+            ...createdQuestionSets.map((questionSetId, idx) => ({
+              questionSetId,
+              questionArchiveId,
+              displayOrder: questionSetsToCreate[idx].displayOrder,
+            })),
+          ]);
+
+        const questionsToRemove = (questionArchive.details || [])
+          .filter(
+            (detail) =>
+              detail.questionId &&
+              !updateData.questions.some(
+                (question) => question.id && question.id === detail.questionId,
+              ),
+          )
+          .map((detail) => detail.questionId);
+
+        const questionSetsToRemove = (questionArchive.details || [])
+          .filter(
+            (detail) =>
+              detail.questionSetId &&
+              !updateData.questionSets.some(
+                (questionSet) =>
+                  questionSet.id && questionSet.id === detail.questionSetId,
+              ),
+          )
+          .map((detail) => detail.questionSetId);
 
         await Promise.all([
           ...(updateData.questions || []).map((question) =>
@@ -396,7 +494,6 @@ export class QuestionArchiveService {
               queryRunner,
             ),
           ),
-
           ...(updateData.questionSets || []).map((questionSet) =>
             this.questionSetService.update(
               questionSet.id,
@@ -418,6 +515,16 @@ export class QuestionArchiveService {
               },
               queryRunner,
             ),
+          ),
+          this.questionService.bulkDeleteFromQuestionArchive(
+            questionsToRemove,
+            questionArchiveId,
+            queryRunner,
+          ),
+          this.questionSetService.bulkDeleteFromQuestionArchive(
+            questionSetsToRemove,
+            questionArchiveId,
+            queryRunner,
           ),
         ]);
       },
@@ -442,6 +549,36 @@ export class QuestionArchiveService {
     }
 
     await this.questionArchiveRepository.softDelete(questionArchiveId);
+  }
+
+  async getResultHistories(
+    accountId: number,
+  ): Promise<QuestionArchiveResultHistoryDto[]> {
+    const user = await this.userService.findOneById(accountId);
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    const questionArchiveResults =
+      await this.questionArchiveResultRepository.find({
+        where: {
+          accountId,
+        },
+        relations: ['questionArchive'],
+        order: {
+          id: Order.DESC,
+        },
+      });
+
+    return questionArchiveResults.map((result) => ({
+      questionArchiveResultId: result.id,
+      questionArchiveId: result.questionArchiveId,
+      questionArchiveName: result.questionArchive.name,
+      numCorrects: result.numCorrects,
+      totalQuestions: result.questionArchive.numQuestions,
+      timeTakenInSecs: result.timeTakenInSecs,
+      createdAt: result.createdAt,
+    }));
   }
 
   private parseSearchParams(

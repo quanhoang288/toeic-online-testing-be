@@ -8,6 +8,7 @@ import {
 } from 'class-validator';
 import { QuestionSetDto } from 'src/modules/question/dtos/question-set.dto';
 import { QuestionDto } from 'src/modules/question/dtos/question.dto';
+import { SectionType } from '../../../common/constants/section-type';
 
 export class ExamSectionDto {
   @ApiProperty()
@@ -19,6 +20,9 @@ export class ExamSectionDto {
   @IsString()
   @IsOptional()
   name?: string;
+
+  @ApiProperty()
+  type: SectionType;
 
   @ApiProperty({ required: false })
   @IsNumber()

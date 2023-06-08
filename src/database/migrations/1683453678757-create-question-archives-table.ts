@@ -12,6 +12,7 @@ export class createQuestionArchivesTable1683453678757
             \`id\` int NOT NULL AUTO_INCREMENT,
             \`name\` varchar(255) NOT NULL,
             \`description\` varchar(255) NULL,
+            \`num_questions\` int NOT NULL,
             \`section_id\` int NOT NULL,
             \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
             \`updated_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),

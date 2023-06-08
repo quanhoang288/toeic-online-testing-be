@@ -15,6 +15,8 @@ import {
   QueryRunner,
   Repository,
 } from 'typeorm';
+import _ from 'lodash';
+
 import { ExamDetailDto, ExamDto, ExamListItemDto } from './dtos/exam.dto';
 import { ExamEntity } from '../../database/entities/exam.entity';
 import { ExamDetailEntity } from '../../database/entities/exam-detail.entity';
@@ -33,7 +35,10 @@ import { ExamSectionDto } from './dtos/section.dto';
 import { Order } from '../../common/constants/order';
 import { ExamResultEntity } from '../../database/entities/exam-result.entity';
 import { ExamAttemptResultDto } from './dtos/exam-attempt-result.dto';
-import _ from 'lodash';
+import { UserService } from '../user/user.service';
+import { ExamResultHistoryDto } from './dtos/exam-result-history.dto';
+import { ExamRegistrationEntity } from '../../database/entities/exam-registration.entity';
+import { ExamRegistrationStatus } from '../../common/constants/exam-registration-status';
 
 @Injectable()
 export class ExamService {
@@ -42,10 +47,13 @@ export class ExamService {
     private readonly transactionService: TransactionService,
     private readonly questionService: QuestionService,
     private readonly questionSetService: QuestionSetService,
+    private readonly userService: UserService,
     @InjectRepository(ExamEntity)
     private readonly examRepository: Repository<ExamEntity>,
     @InjectRepository(ExamDetailEntity)
     private readonly examDetailRepository: Repository<ExamDetailEntity>,
+    @InjectRepository(ExamRegistrationEntity)
+    private readonly examRegistrationRepository: Repository<ExamRegistrationEntity>,
     @InjectRepository(ExamResultEntity)
     private readonly examResultRepository: Repository<ExamResultEntity>,
   ) {}
@@ -77,6 +85,7 @@ export class ExamService {
         id: exam.id,
         name: exam.name,
         type: exam.examType?.name,
+        isMiniTest: exam.isMiniTest,
         examSet: exam.examSet.title,
         registerStartsAt: exam.registerStartsAt?.toISOString(),
         registerEndsAt: exam.registerEndsAt?.toISOString(),
@@ -126,28 +135,54 @@ export class ExamService {
       });
     }
 
+    const questionsBySection = new Map<number, ExamDetailEntity[]>();
+    const questionSetsBySection = new Map<number, ExamDetailEntity[]>();
+
+    for (const item of examDetails) {
+      const sectionId = item.sectionId;
+      if (!questionsBySection.has(sectionId)) {
+        questionsBySection.set(sectionId, []);
+      }
+
+      if (!questionSetsBySection.has(sectionId)) {
+        questionSetsBySection.set(sectionId, []);
+      }
+
+      if (item.question) {
+        questionsBySection.get(sectionId).push(item);
+      } else {
+        questionSetsBySection.get(sectionId).push(item);
+      }
+    }
+
     const examDetailBySections: ExamSectionDto[] = [];
     for (const examSection of exam.examType.sections) {
+      const sectionId = examSection.id;
+      const numQuestionsInSection =
+        (questionsBySection.get(sectionId)?.length || 0) +
+        questionSetsBySection
+          .get(sectionId)
+          ?.reduce(
+            (totalQuestionsInQuestionSet, curQuestionSet) =>
+              totalQuestionsInQuestionSet +
+              curQuestionSet.questionSet.questions.length,
+            0,
+          );
+
       examDetailBySections.push({
-        id: examSection.id,
+        id: sectionId,
         name: examSection.name,
-        numQuestions: examSection.numQuestions,
-        questions: examDetails
-          .filter(
-            (examDetail) =>
-              examDetail.questionId && examDetail.sectionId === examSection.id,
-          )
-          .map((examDetail) => ({
-            ...examDetail.question,
-            displayOrder: examDetail.displayOrder,
-          })),
-        questionSets: examDetails
-          .filter(
-            (examDetail) =>
-              examDetail.questionSetId &&
-              examDetail.sectionId === examSection.id,
-          )
-          .map((examDetail) => ({
+        type: examSection.type,
+        numQuestions: !exam.isMiniTest
+          ? examSection.numQuestions
+          : numQuestionsInSection,
+        questions: questionsBySection.get(sectionId)?.map((examDetail) => ({
+          ...examDetail.question,
+          displayOrder: examDetail.displayOrder,
+        })),
+        questionSets: questionSetsBySection
+          .get(sectionId)
+          ?.map((examDetail) => ({
             ...examDetail.questionSet,
             questions: examDetail.questionSet.questions.sort(
               (question1, question2) =>
@@ -164,6 +199,7 @@ export class ExamService {
       name: exam.name,
       examTypeId: exam.examTypeId,
       hasMultipleSections: exam.hasMultipleSections,
+      isMiniTest: exam.isMiniTest,
       registerStartsAt: exam.registerStartsAt?.toISOString(),
       registerEndsAt: exam.registerEndsAt?.toISOString(),
       startsAt: exam.startsAt?.toISOString(),
@@ -181,7 +217,6 @@ export class ExamService {
       images: IFile[];
     },
   ): Promise<void> {
-    console.log('asset files:', assetFiles);
     // Validation
     const existingExamWithName = await this.examRepository.findOneBy({
       name: examDto.name,
@@ -221,6 +256,7 @@ export class ExamService {
             name: examDto.name,
             examTypeId: examDto.examTypeId,
             hasMultipleSections: examDto.hasMultipleSections || true,
+            isMiniTest: examDto.isMiniTest || false,
             timeLimitInMins: examDto.timeLimitInMins,
             registerStartsAt: examDto.registerStartsAt,
             registerEndsAt: examDto.registerEndsAt,
@@ -294,9 +330,6 @@ export class ExamService {
           this.questionService.bulkCreate(questionsToCreate, queryRunner),
           this.questionSetService.bulkCreate(questionSetsToCreate, queryRunner),
         ]);
-
-        console.log('questions created: ', createdQuestions[0]);
-        console.log('question sets created: ', createdQuestionSets[0]);
 
         // save exam details
         await queryRunner.manager.getRepository(ExamDetailEntity).save([
@@ -387,6 +420,7 @@ export class ExamService {
               'registerStartsAt',
               'registerEndsAt',
               'startsAt',
+              'isMiniTest',
               'numParticipant',
               'audioKey',
               'examSetId',
@@ -587,6 +621,60 @@ export class ExamService {
     await this.examRepository.softDelete(examId);
   }
 
+  async register(examId: number, accountId: number): Promise<void> {
+    const exam = await this.examRepository.findOneBy({ id: examId });
+    if (!exam) {
+      throw new BadRequestException('Exam not found');
+    }
+    const user = await this.userService.findOneById(accountId);
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    const existingRegistration = await this.examRegistrationRepository.findOne({
+      where: {
+        accountId,
+        examId,
+      },
+    });
+    if (existingRegistration) {
+      throw new BadRequestException('User already registered for this exam');
+    }
+
+    await this.examRegistrationRepository.save({
+      accountId,
+      examId,
+      status: ExamRegistrationStatus.ACCEPTED,
+    });
+  }
+
+  async cancelRegistration(examId: number, accountId: number): Promise<void> {
+    const exam = await this.examRepository.findOneBy({ id: examId });
+    if (!exam) {
+      throw new BadRequestException('Exam not found');
+    }
+    const user = await this.userService.findOneById(accountId);
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    const existingRegistration = await this.examRegistrationRepository.findOne({
+      where: {
+        accountId,
+        examId,
+      },
+    });
+    if (!existingRegistration) {
+      throw new BadRequestException('User not registered for this exam yet');
+    }
+
+    await this.examRegistrationRepository.save({
+      accountId,
+      examId,
+      status: ExamRegistrationStatus.CANCELLED,
+    });
+  }
+
   async getAttemptResult(examResultId: number): Promise<ExamAttemptResultDto> {
     const examResult = await this.examResultRepository.findOne({
       where: {
@@ -656,6 +744,7 @@ export class ExamService {
       examResultDetailBySections.push({
         id: examSection.id,
         name: examSection.name,
+        type: examSection.type,
         numQuestions: examSection.numQuestions,
         numCorrects:
           questions.filter(
@@ -705,10 +794,42 @@ export class ExamService {
       examId: examResult.examId,
       examName: examResult.exam.name,
       numCorrects: examResult.numCorrects,
+      readingPoints: examResult.readingPoints,
+      listeningPoints: examResult.listeningPoints,
+      totalPoints: examResult.totalPoints,
       isPartial: examResult.isPartial,
       timeTakenInSecs: examResult.timeTakenInSecs,
       sections: examResultDetailBySections,
     };
+  }
+
+  async getResultHistories(accountId: number): Promise<ExamResultHistoryDto[]> {
+    const user = await this.userService.findOneById(accountId);
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    const examResults = await this.examResultRepository.find({
+      where: {
+        accountId,
+      },
+      relations: ['exam'],
+      order: {
+        id: Order.DESC,
+      },
+    });
+
+    return examResults.map((result) => ({
+      examResultId: result.id,
+      examId: result.examId,
+      examName: result.exam.name,
+      numCorrects: result.numCorrects,
+      listeningPoints: result.listeningPoints,
+      readingPoints: result.readingPoints,
+      totalPoints: result.totalPoints,
+      timeTakenInSecs: result.timeTakenInSecs,
+      createdAt: result.createdAt,
+    }));
   }
 
   private parseSearchParams(

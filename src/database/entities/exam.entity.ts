@@ -41,6 +41,9 @@ export class ExamEntity extends AbstractEntity {
   @Column({ nullable: true })
   startsAt?: Date;
 
+  @Column()
+  isMiniTest!: boolean;
+
   @Column({ default: 0 })
   numParticipants!: number;
 
