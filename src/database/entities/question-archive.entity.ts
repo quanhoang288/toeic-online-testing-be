@@ -5,12 +5,14 @@ import {
   JoinTable,
   ManyToMany,
   ManyToOne,
+  OneToMany,
 } from 'typeorm';
 import { AbstractEntity } from '../../common/models/abstract.entity';
 import { QuestionSetEntity } from './question-set.entity';
 import { QuestionEntity } from './question.entity';
 import { SectionEntity } from './section.entity';
 import { AccountEntity } from './account.entity';
+import { QuestionArchiveDetailEntity } from './question-archive-detail.entity';
 
 export const QUESTION_ARCHIVE_TABLE_NAME = 'question_archives';
 
@@ -62,4 +64,10 @@ export class QuestionArchiveEntity extends AbstractEntity {
 
   @ManyToMany(() => AccountEntity, (account) => account.questionArchives)
   accounts: AccountEntity[];
+
+  @OneToMany(
+    () => QuestionArchiveDetailEntity,
+    (questionArchiveDetail) => questionArchiveDetail.questionArchive,
+  )
+  details: QuestionArchiveDetailEntity[];
 }

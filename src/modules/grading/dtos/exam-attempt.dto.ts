@@ -34,11 +34,6 @@ export class ExamAttemptDto {
   @ApiProperty()
   @IsNumber()
   @IsNotEmpty()
-  accountId: number;
-
-  @ApiProperty()
-  @IsNumber()
-  @IsNotEmpty()
   timeTakenInSecs: number;
 
   @ApiProperty({ required: false, type: [ExamSectionAttempt] })

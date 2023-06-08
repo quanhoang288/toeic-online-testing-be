@@ -111,8 +111,6 @@ export class AuthService {
       }
     }
 
-    console.log('user roles inside auth service', user.roles);
-
     const payload: JwtPayload = {
       sub: user.id,
       username: user.username,
