@@ -89,6 +89,7 @@ export class AuthService {
 
   async login(credentials: AuthCredentialDto): Promise<AuthTokenDto> {
     const user = await this.userService.findOneByEmail(credentials.email);
+    console.log('found user', user);
     if (!user || !(await bcrypt.compare(credentials.password, user.password))) {
       throw new BadRequestException('Email or password incorrect');
     }
@@ -100,12 +101,18 @@ export class AuthService {
     user: AccountEntity,
     providerName?: OAuthProvider,
   ): Promise<AuthTokenDto> {
-    const provider = await this.oauthProviderRepository.findOneBy({
-      name: providerName,
-    });
-    if (!provider) {
-      throw new InternalServerErrorException('OAuth provider not found');
+    let provider: OAuthProviderEntity;
+    if (providerName) {
+      provider = await this.oauthProviderRepository.findOneBy({
+        name: providerName,
+      });
+      if (!provider) {
+        throw new InternalServerErrorException('OAuth provider not found');
+      }
     }
+
+    console.log('user roles inside auth service', user.roles);
+
     const payload: JwtPayload = {
       sub: user.id,
       username: user.username,
@@ -185,7 +192,7 @@ export class AuthService {
     accessToken: string,
     provider?: OAuthProvider,
   ): Promise<AccountEntity> {
-    const user = await this.userService.findOneById(userId);
+    const user = await this.userService.findOneById(userId, true);
     if (!user) {
       throw new BadRequestException('User not found');
     }

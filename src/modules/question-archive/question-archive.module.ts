@@ -6,6 +6,7 @@ import { QuestionArchiveService } from './question-archive.service';
 import { QuestionArchiveController } from './question-archive.controller';
 import { QuestionModule } from '../question/question.module';
 import { QuestionArchiveResultEntity } from '../../database/entities/question-archive-result.entity';
+import { UserModule } from '../user/user.module';
 
 @Module({
   providers: [QuestionArchiveService],
@@ -16,6 +17,7 @@ import { QuestionArchiveResultEntity } from '../../database/entities/question-ar
       QuestionArchiveResultEntity,
     ]),
     QuestionModule,
+    UserModule,
   ],
   controllers: [QuestionArchiveController],
 })

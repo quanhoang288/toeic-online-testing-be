@@ -23,6 +23,9 @@ export class QuestionArchiveEntity extends AbstractEntity {
   description?: string;
 
   @Column()
+  numQuestions: number;
+
+  @Column()
   sectionId!: number;
 
   @ManyToOne(() => SectionEntity, (section) => section.questionArchives)

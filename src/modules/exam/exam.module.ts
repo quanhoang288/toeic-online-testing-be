@@ -8,6 +8,8 @@ import { ExamController } from './exam.controller';
 import { QuestionModule } from '../question/question.module';
 import { ExamTypeEntity } from '../../database/entities/exam-type.entity';
 import { ExamResultEntity } from '../../database/entities/exam-result.entity';
+import { UserModule } from '../user/user.module';
+import { ExamRegistrationEntity } from '../../database/entities/exam-registration.entity';
 
 @Module({
   imports: [
@@ -16,9 +18,11 @@ import { ExamResultEntity } from '../../database/entities/exam-result.entity';
       ExamDetailEntity,
       SectionEntity,
       ExamTypeEntity,
+      ExamRegistrationEntity,
       ExamResultEntity,
     ]),
     QuestionModule,
+    UserModule,
   ],
   providers: [ExamService],
   controllers: [ExamController],

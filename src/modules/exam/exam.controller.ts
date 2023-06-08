@@ -10,16 +10,20 @@ import {
   Post,
   Put,
   Query,
+  Req,
+  UnauthorizedException,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiBody,
   ApiConsumes,
   ApiCreatedResponse,
   ApiExtraModels,
   ApiOkResponse,
+  ApiParam,
   ApiQuery,
   ApiTags,
   getSchemaPath,
@@ -37,6 +41,9 @@ import { ExamAttemptResultDto } from './dtos/exam-attempt-result.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../guards/roles.guard';
 import { AdminRole } from '../../decorators/admin-role.decorator';
+import { Request as ExpressRequest } from 'express';
+import { PublicRoute } from '../../decorators/public-route.decorator';
+import { ExamResultHistoryDto } from './dtos/exam-result-history.dto';
 
 @Controller('exams')
 @ApiTags('exams')
@@ -68,12 +75,18 @@ export class ExamController {
 
   @Get(':id')
   @ApiOkResponse({ type: ExamDetailDto })
-  async show(@Param('id', ParseIntPipe) examId: number) {
-    return this.examService.show(examId);
+  @PublicRoute(true)
+  @UseGuards(JwtAuthGuard)
+  async show(
+    @Req() req: ExpressRequest,
+    @Param('id', ParseIntPipe) examId: number,
+  ) {
+    return this.examService.show(examId, req.user?.id);
   }
 
   @Get(':id/results/:examResultId')
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOkResponse({ type: ExamAttemptResultDto })
   async getExamResultDetail(
     @Param('id', ParseIntPipe) examId: number,
@@ -89,6 +102,7 @@ export class ExamController {
   @HttpCode(HttpStatus.CREATED)
   @ApiConsumes('multipart/form-data')
   @ApiBody({ type: ExamUploadDto })
+  @ApiBearerAuth()
   @ApiCreatedResponse({ type: ApiResponseDto })
   @AdminRole()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -112,6 +126,7 @@ export class ExamController {
   )
   @ApiConsumes('multipart/form-data')
   @ApiBody({ type: ExamUploadDto })
+  @ApiBearerAuth()
   @ApiOkResponse({ type: ApiResponseDto })
   async update(
     @Param('id', ParseIntPipe) examId: number,
@@ -129,9 +144,51 @@ export class ExamController {
   @Delete(':id')
   @AdminRole()
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiBearerAuth()
   @ApiOkResponse({ type: ApiResponseDto })
   async delete(@Param('id', ParseIntPipe) examId: number) {
     await this.examService.delete(examId);
     return { message: 'Exam deleted successfully' };
+  }
+
+  @Post(':examId/register')
+  @UseGuards(JwtAuthGuard)
+  @ApiParam({ name: 'examId' })
+  @ApiBearerAuth()
+  @ApiOkResponse({ type: ApiResponseDto })
+  async registerForExam(
+    @Req() req: ExpressRequest,
+    @Param('examId', ParseIntPipe) examId: number,
+  ) {
+    if (!req.user) {
+      throw new UnauthorizedException();
+    }
+    return this.examService.register(examId, req.user.id);
+  }
+
+  @Post(':examId/cancel-registration')
+  @UseGuards(JwtAuthGuard)
+  @ApiParam({ name: 'examId' })
+  @ApiBearerAuth()
+  @ApiOkResponse({ type: ApiResponseDto })
+  async cancelExamRegistration(
+    @Req() req: ExpressRequest,
+    @Param('examId', ParseIntPipe) examId: number,
+  ) {
+    if (!req.user) {
+      throw new UnauthorizedException();
+    }
+    return this.examService.cancelRegistration(examId, req.user.id);
+  }
+
+  @Get('/result-histories')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOkResponse({ type: [ExamResultHistoryDto] })
+  async getResultHistories(@Req() req: ExpressRequest) {
+    if (!req.user) {
+      throw new UnauthorizedException();
+    }
+    return this.examService.getResultHistories(req.user.id);
   }
 }

@@ -1,6 +1,6 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiTags } from '@nestjs/swagger';
-import { GradingService } from './grading.service';
+import { GradingService } from './services/grading.service';
 import { ExamAttemptDto } from './dtos/exam-attempt.dto';
 import { QuestionArchiveAttemptDto } from './dtos/question-archive-attempt.dto';
 import { AttemptResult } from './dtos/attempt-result.dto';

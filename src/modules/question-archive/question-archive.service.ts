@@ -20,6 +20,8 @@ import { QuestionArchiveDetailEntity } from '../../database/entities/question-ar
 import { QuestionArchiveFilterDto } from './dtos/question-archive-filter.dto';
 import { QuestionArchiveAttemptResultDto } from './dtos/question-archive-attempt-result.dto';
 import { QuestionArchiveResultEntity } from '../../database/entities/question-archive-result.entity';
+import { UserService } from '../user/user.service';
+import { QuestionArchiveResultHistoryDto } from './dtos/question-archive-result-history.dto';
 
 @Injectable()
 export class QuestionArchiveService {
@@ -28,6 +30,7 @@ export class QuestionArchiveService {
     private readonly transactionService: TransactionService,
     private readonly questionService: QuestionService,
     private readonly questionSetService: QuestionSetService,
+    private readonly userService: UserService,
     @InjectRepository(QuestionArchiveEntity)
     private readonly questionArchiveRepository: Repository<QuestionArchiveEntity>,
     @InjectRepository(QuestionArchiveDetailEntity)
@@ -236,6 +239,14 @@ export class QuestionArchiveService {
       ),
     );
 
+    const numQuestions =
+      (questionArchiveDto.questions?.length || 0) +
+      (questionArchiveDto.questionSets || []).reduce(
+        (numQuestionsInQuestionSet, curQuestionSet) =>
+          numQuestionsInQuestionSet + curQuestionSet.questions.length,
+        0,
+      );
+
     const transactionRes = await this.transactionService.runInTransaction(
       async (queryRunner: QueryRunner) => {
         const createdQuestionArchive = await queryRunner.manager
@@ -243,6 +254,7 @@ export class QuestionArchiveService {
           .save({
             name: questionArchiveDto.name,
             sectionId: questionArchiveDto.sectionId,
+            numQuestions,
           });
 
         const questionsToCreate = questionArchiveDto.questions.map(
@@ -286,9 +298,6 @@ export class QuestionArchiveService {
           this.questionService.bulkCreate(questionsToCreate, queryRunner),
           this.questionSetService.bulkCreate(questionSetsToCreate, queryRunner),
         ]);
-
-        console.log('questions created: ', createdQuestions[0]);
-        console.log('question sets created: ', createdQuestionSets[0]);
 
         // save exam details
         await queryRunner.manager
@@ -442,6 +451,36 @@ export class QuestionArchiveService {
     }
 
     await this.questionArchiveRepository.softDelete(questionArchiveId);
+  }
+
+  async getResultHistories(
+    accountId: number,
+  ): Promise<QuestionArchiveResultHistoryDto[]> {
+    const user = await this.userService.findOneById(accountId);
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    const questionArchiveResults =
+      await this.questionArchiveResultRepository.find({
+        where: {
+          accountId,
+        },
+        relations: ['questionArchive'],
+        order: {
+          id: Order.DESC,
+        },
+      });
+
+    return questionArchiveResults.map((result) => ({
+      questionArchiveResultId: result.id,
+      questionArchiveId: result.questionArchiveId,
+      questionArchiveName: result.questionArchive.name,
+      numCorrects: result.numCorrects,
+      totalQuestions: result.questionArchive.numQuestions,
+      timeTakenInSecs: result.timeTakenInSecs,
+      createdAt: result.createdAt,
+    }));
   }
 
   private parseSearchParams(
