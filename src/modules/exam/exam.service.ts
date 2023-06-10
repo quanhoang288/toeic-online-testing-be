@@ -217,6 +217,7 @@ export class ExamService {
       images: IFile[];
     },
   ): Promise<void> {
+    console.log('asset files:', assetFiles);
     // Validation
     const existingExamWithName = await this.examRepository.findOneBy({
       name: examDto.name,
@@ -330,6 +331,9 @@ export class ExamService {
           this.questionService.bulkCreate(questionsToCreate, queryRunner),
           this.questionSetService.bulkCreate(questionSetsToCreate, queryRunner),
         ]);
+
+        console.log('questions created: ', createdQuestions[0]);
+        console.log('question sets created: ', createdQuestionSets[0]);
 
         // save exam details
         await queryRunner.manager.getRepository(ExamDetailEntity).save([

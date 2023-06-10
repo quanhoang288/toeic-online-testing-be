@@ -50,13 +50,14 @@ export class GradingService {
 
   public async evaluateExamAttempt(
     examAttemptDto: ExamAttemptDto,
+    userId: number,
   ): Promise<AttemptResult> {
-    const { examId, accountId, sections } = examAttemptDto;
+    const { examId, sections } = examAttemptDto;
     const exam = await this.examRepository.findOneBy({ id: examId });
     if (!exam) {
       throw new BadRequestException('Exam not found');
     }
-    const user = await this.userService.findOneById(accountId);
+    const user = await this.userService.findOneById(userId);
     if (!user) {
       throw new BadRequestException('User not found');
     }
@@ -137,7 +138,7 @@ export class GradingService {
         .getRepository(ExamResultEntity)
         .save({
           examId,
-          accountId,
+          accountId: userId,
           isVirtual: false,
           isPartial: examAttemptDto.isPartial || false,
           numCorrects,
@@ -165,6 +166,7 @@ export class GradingService {
 
   public async evaluateQuestionArchiveAttempt(
     questionArchiveAttemptDto: QuestionArchiveAttemptDto,
+    accountId: number,
   ): Promise<AttemptResult> {
     const { questionArchiveId, questions } = questionArchiveAttemptDto;
     const questionArchiveDetails =
@@ -184,6 +186,11 @@ export class GradingService {
     if (!questionArchiveDetails.length) {
       throw new BadRequestException('Question archive details not found');
     }
+    const user = await this.userService.findOneById(accountId);
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
     const answersByQuestion = this.buildAnswersByQuestionMapping(
       questionArchiveDetails,
     );
@@ -215,7 +222,7 @@ export class GradingService {
     const createdQuestionArchiveResult =
       await this.questionArchiveResultRepository.save({
         questionArchiveId,
-        accountId: questionArchiveAttemptDto.accountId,
+        accountId,
         numCorrects,
         timeTakenInSecs: questionArchiveAttemptDto.timeTakenInSecs || 0,
       });
