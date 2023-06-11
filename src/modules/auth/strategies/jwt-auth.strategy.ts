@@ -1,7 +1,6 @@
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { UserService } from '../../user/user.service';
 import { AppConfigService } from '../../../shared/services/app-config.service';
 import { AuthService } from '../auth.service';
 import { OAuthProvider } from '../../../common/constants/oauth-provider';
@@ -11,7 +10,6 @@ import { Request } from 'express';
 export class JwtAuthStrategy extends PassportStrategy(Strategy) {
   constructor(
     appConfigService: AppConfigService,
-    private readonly userService: UserService,
     private readonly authService: AuthService,
   ) {
     super({

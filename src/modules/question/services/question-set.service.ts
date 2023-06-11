@@ -95,26 +95,36 @@ export class QuestionSetService {
   ): Promise<void> {
     const questionSet = await queryRunner.manager
       .getRepository(QuestionSetEntity)
-      .findOne({ where: { id: questionSetId }, relations: ['images'] });
+      .findOne({
+        where: { id: questionSetId },
+        relations: ['questions', 'images'],
+      });
     if (!questionSet) {
       return;
     }
 
     const questionSetOnlyData = _.omitBy(
       _.pick(updateDto, ['title', 'content', 'audioKey']),
-      _.isEmpty,
     );
-    if (updateDto.imageKeys && questionSet.images.length) {
+    const imagesToRemove = questionSet.images.filter(
+      (existingImage) =>
+        !(updateDto.imageKeys || []).some(
+          (imgKey) => existingImage.imageKey === imgKey,
+        ),
+    );
+
+    if (imagesToRemove.length) {
       await Promise.all([
-        ...questionSet.images.map((image) =>
-          this.s3Service.deleteFile(image.imageKey as string),
+        ...imagesToRemove.map((image) =>
+          this.s3Service.deleteFile(image.imageKey),
         ),
         queryRunner.manager.getRepository(QuestionSetImageEntity).delete({
-          id: In(questionSet.images.map((image) => image.id)),
+          id: In(imagesToRemove.map((image) => image.id)),
         }),
       ]);
     }
-    if (updateDto.audioKey && questionSet.audioKey) {
+
+    if (questionSet.audioKey && updateDto.audioKey !== questionSet.audioKey) {
       await this.s3Service.deleteFile(questionSet.audioKey as string);
     }
 
@@ -125,6 +135,16 @@ export class QuestionSetService {
           (existingImage) => existingImage.imageKey === key,
         ),
     );
+
+    const questionsToCreate = (updateDto.questions || [])
+      .filter((question) => !question.id)
+      .map((q) => ({ ...q, questionSetId }));
+
+    const questionsToRemove = (questionSet.questions || []).filter(
+      (existingQuestion) =>
+        !(updateDto.questions || []).some((q) => q.id === existingQuestion.id),
+    );
+    const questionsToUpdate = (updateDto.questions || []).filter((q) => q.id);
 
     await Promise.all([
       queryRunner.manager.getRepository(QuestionSetEntity).save({
@@ -137,7 +157,12 @@ export class QuestionSetService {
           imageKey: key,
         })),
       ),
-      ...updateDto.questions.map((question) =>
+      this.questionService.bulkCreate(questionsToCreate, queryRunner),
+      this.questionService.delete(
+        questionsToRemove.map((q) => q.id),
+        queryRunner,
+      ),
+      ...questionsToUpdate.map((question) =>
         this.questionService.update(question.id, question, queryRunner),
       ),
     ]);
@@ -148,16 +173,25 @@ export class QuestionSetService {
     examId: number,
     queryRunner?: QueryRunner,
   ): Promise<void> {
+    if (!questionSetIds.length) {
+      return;
+    }
     if (queryRunner) {
+      await queryRunner.manager.getRepository(QuestionEntity).delete({
+        questionSetId: In(questionSetIds),
+      });
       await queryRunner.manager.getRepository(ExamDetailEntity).delete({
         examId,
         questionId: In(questionSetIds),
       });
-      await queryRunner.manager.getRepository(QuestionEntity).delete({
+      await queryRunner.manager.getRepository(QuestionSetEntity).delete({
         id: In(questionSetIds),
       });
     } else {
       await this.examDetailRepository.manager.transaction(async (manager) => {
+        await manager.getRepository(QuestionEntity).delete({
+          questionSetId: In(questionSetIds),
+        });
         await manager.getRepository(ExamDetailEntity).delete({
           examId,
           questionId: In(questionSetIds),
@@ -174,7 +208,13 @@ export class QuestionSetService {
     questionArchiveId: number,
     queryRunner?: QueryRunner,
   ): Promise<void> {
+    if (!questionSetIds.length) {
+      return;
+    }
     if (queryRunner) {
+      await queryRunner.manager.getRepository(QuestionEntity).delete({
+        questionSetId: In(questionSetIds),
+      });
       await queryRunner.manager
         .getRepository(QuestionArchiveDetailEntity)
         .delete({
@@ -187,6 +227,9 @@ export class QuestionSetService {
     } else {
       await this.questionArchiveDetailRepository.manager.transaction(
         async (manager) => {
+          await manager.getRepository(QuestionEntity).delete({
+            questionSetId: In(questionSetIds),
+          });
           await manager.getRepository(QuestionArchiveDetailEntity).delete({
             questionArchiveId,
             questionSetId: In(questionSetIds),

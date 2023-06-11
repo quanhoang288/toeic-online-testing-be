@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Post,
   Redirect,
+  Req,
   Request,
   Res,
   UseGuards,
@@ -18,8 +19,9 @@ import { Request as ExpressRequest, Response } from 'express';
 import { AccountEntity } from '../../database/entities/account.entity';
 import { UserDto } from '../user/dtos/user.dto';
 import { AuthCredentialDto } from './dtos/auth-credential.dto';
-import { ApiBody, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOkResponse, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthUserDto } from './dtos/auth-user.dto';
+import { AuthTokenDto } from './dtos/auth-token.dto';
 
 @Controller('auth')
 @ApiTags('auth')
@@ -39,17 +41,9 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiBody({ type: AuthCredentialDto })
-  async login(
-    @Body() authDto: AuthCredentialDto,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const authTokens = await this.authService.login(authDto);
-    res.cookie('accessToken', authTokens.accessToken, {
-      expires: authTokens.accessTokenExpiresAt,
-    });
-    res.cookie('refreshToken', authTokens.refreshToken, {
-      expires: authTokens.refreshTokenExpiresAt,
-    });
+  @ApiOkResponse({ type: AuthTokenDto })
+  async login(@Body() authDto: AuthCredentialDto) {
+    return this.authService.login(authDto);
   }
 
   @Post('register')
@@ -70,7 +64,7 @@ export class AuthController {
   @Get('google')
   @UseGuards(GoogleOAuthGuard)
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  async loginWithGoogle(@Request() req) {}
+  async loginWithGoogle(@Req() req) {}
 
   @Get('google/callback')
   @Redirect('http://localhost:3000', 302)

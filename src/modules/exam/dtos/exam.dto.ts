@@ -46,6 +46,11 @@ export class ExamDto {
   @IsOptional()
   startsAt?: string;
 
+  @ApiProperty({ nullable: true, required: false })
+  @IsBoolean()
+  @IsOptional()
+  isMiniTest?: boolean;
+
   @ApiProperty({ type: [ExamSectionDto] })
   @IsArray()
   @IsNotEmpty()
@@ -62,6 +67,9 @@ export class ExamListItemDto {
 
   @ApiProperty()
   type: string;
+
+  @ApiProperty()
+  isMiniTest: boolean;
 
   @ApiProperty({ nullable: true, required: false })
   examSet?: string;

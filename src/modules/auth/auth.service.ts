@@ -100,12 +100,16 @@ export class AuthService {
     user: AccountEntity,
     providerName?: OAuthProvider,
   ): Promise<AuthTokenDto> {
-    const provider = await this.oauthProviderRepository.findOneBy({
-      name: providerName,
-    });
-    if (!provider) {
-      throw new InternalServerErrorException('OAuth provider not found');
+    let provider: OAuthProviderEntity;
+    if (providerName) {
+      provider = await this.oauthProviderRepository.findOneBy({
+        name: providerName,
+      });
+      if (!provider) {
+        throw new InternalServerErrorException('OAuth provider not found');
+      }
     }
+
     const payload: JwtPayload = {
       sub: user.id,
       username: user.username,
@@ -185,7 +189,7 @@ export class AuthService {
     accessToken: string,
     provider?: OAuthProvider,
   ): Promise<AccountEntity> {
-    const user = await this.userService.findOneById(userId);
+    const user = await this.userService.findOneById(userId, true);
     if (!user) {
       throw new BadRequestException('User not found');
     }

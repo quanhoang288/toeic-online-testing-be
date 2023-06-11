@@ -19,7 +19,20 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(
     AppModule,
     new ExpressAdapter(),
-    { cors: true },
+    {
+      // cors: {
+      //   // credentials: true,
+      //   allowedHeaders: [
+      //     'Origin',
+      //     'X-Requested-With',
+      //     'Content-Type',
+      //     'Accept',
+      //   ],
+      //   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      //   origin: true,
+      // },
+      cors: true,
+    },
   );
 
   app.useGlobalPipes(

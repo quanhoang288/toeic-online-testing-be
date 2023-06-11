@@ -10,11 +10,6 @@ export class QuestionArchiveAttemptDto {
 
   @ApiProperty()
   @IsNumber()
-  @IsNotEmpty()
-  accountId: number;
-
-  @ApiProperty()
-  @IsNumber()
   @IsOptional()
   timeTakenInSecs?: number;
 

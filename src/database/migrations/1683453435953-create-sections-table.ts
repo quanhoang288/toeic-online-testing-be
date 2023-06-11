@@ -9,6 +9,7 @@ export class createSectionsTable1683453435953 implements MigrationInterface {
                 (
                     \`id\` int NOT NULL AUTO_INCREMENT,
                     \`name\` varchar(255) NOT NULL,
+                    \`type\` varchar(255) NOT NULL,
                     \`description\` varchar(255) NULL,
                     \`num_questions\` int NOT NULL,
                     \`exam_type_id\` int NOT NULL,

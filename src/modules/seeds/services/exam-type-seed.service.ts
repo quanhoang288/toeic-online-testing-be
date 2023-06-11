@@ -8,6 +8,7 @@ import { ExamTypeEntity } from '../../../database/entities/exam-type.entity';
 import { SectionEntity } from '../../../database/entities/section.entity';
 
 import examTypeData from '../data/exam-type.json';
+import { SectionType } from '../../../common/constants/section-type';
 
 @Injectable()
 export class ExamTypeSeedService extends SeedBaseService<ExamTypeEntity> {
@@ -35,6 +36,7 @@ export class ExamTypeSeedService extends SeedBaseService<ExamTypeEntity> {
             (examType.sections || []).map((section) => ({
               ...section,
               examTypeId: createdExamType.id,
+              type: section.type as SectionType,
             })),
           );
         } else {

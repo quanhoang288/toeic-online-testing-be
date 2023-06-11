@@ -17,12 +17,12 @@ export class createExamsTable1683453567909 implements MigrationInterface {
             \`register_starts_at\` timestamp(6) NULL,
             \`register_ends_at\` timestamp(6) NULL,
             \`starts_at\` timestamp(6) NULL,
-            \`num_participants\` int NOT NULL default 0,
+            \`is_mini_test\` tinyint(2) NOT NULL DEFAULT 0,
+            \`num_participants\` int NOT NULL DEFAULT 0,
             \`audio_key\` varchar(255) NULL,
             \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
             \`updated_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
             \`deleted_at\` timestamp(6) NULL,
-            UNIQUE INDEX \`idx-unique-${EXAM_TABLE_NAME}-name\` (\`name\`),
             PRIMARY KEY (\`id\`)
         )`,
     );
@@ -40,9 +40,6 @@ export class createExamsTable1683453567909 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      `DROP INDEX \`idx-unique-${EXAM_TABLE_NAME}-name\` ON \`${EXAM_TABLE_NAME}\``,
-    );
     await queryRunner.query(
       `DROP FOREIGN KEY \`fk-${EXAM_TABLE_NAME}-exam_set_id\` ON \`${EXAM_TABLE_NAME}\``,
     );

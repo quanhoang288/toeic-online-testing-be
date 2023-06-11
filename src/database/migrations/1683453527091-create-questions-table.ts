@@ -10,6 +10,7 @@ export class createQuestionsTable1683453527091 implements MigrationInterface {
                 \`id\` int NOT NULL AUTO_INCREMENT,
                 \`type\` varchar(255) NOT NULL DEFAULT 'multiple_choice',
                 \`content\` text NULL,
+                \`audio_key\` varchar(255) NULL,
                 \`image_key\` varchar(255) NULL,
                 \`explanation\` text NULL,
                 \`question_set_id\` int NULL,
