@@ -148,9 +148,9 @@ export class ExamService {
         questionSetsBySection.set(sectionId, []);
       }
 
-      if (item.question) {
+      if (item.questionId) {
         questionsBySection.get(sectionId).push(item);
-      } else {
+      } else if (item.questionSetId) {
         questionSetsBySection.get(sectionId).push(item);
       }
     }
@@ -217,7 +217,6 @@ export class ExamService {
       images: IFile[];
     },
   ): Promise<void> {
-    console.log('asset files:', assetFiles);
     // Validation
     const existingExamWithName = await this.examRepository.findOneBy({
       name: examDto.name,
@@ -332,9 +331,6 @@ export class ExamService {
           this.questionSetService.bulkCreate(questionSetsToCreate, queryRunner),
         ]);
 
-        console.log('questions created: ', createdQuestions[0]);
-        console.log('question sets created: ', createdQuestionSets[0]);
-
         // save exam details
         await queryRunner.manager.getRepository(ExamDetailEntity).save([
           ...createdQuestions.map((questionId, idx) => ({
@@ -394,14 +390,16 @@ export class ExamService {
     let audioKeys: string[] = [];
     let imageKeys: string[] = [];
 
-    if (assetFiles) {
+    if (assetFiles.audios?.length) {
       audioKeys = await Promise.all(
-        (assetFiles.audios || []).map((audioFile) =>
+        assetFiles.audios.map((audioFile) =>
           this.s3Service.uploadFile(audioFile, 'audios'),
         ),
       );
+    }
+    if (assetFiles.images?.length) {
       imageKeys = await Promise.all(
-        (assetFiles.images || []).map((imageFile) =>
+        assetFiles.images.map((imageFile) =>
           this.s3Service.uploadFile(imageFile, 'images'),
         ),
       );
@@ -552,12 +550,12 @@ export class ExamService {
                         question.audioFileIndex != undefined &&
                         question.audioFileIndex < audioKeys.length
                           ? audioKeys[question.audioFileIndex]
-                          : null,
+                          : question.audioKey,
                       imageKey:
                         question.imageFileIndex != undefined &&
                         question.imageFileIndex < imageKeys.length
                           ? imageKeys[question.imageFileIndex]
-                          : null,
+                          : question.imageKey,
                     },
                     queryRunner,
                   ),
@@ -576,12 +574,12 @@ export class ExamService {
                               questionSet.imageFileIndices.includes(idx),
                             ),
                           ]
-                        : null,
+                        : questionSet.imageKeys,
                       audioKey:
                         questionSet.audioFileIndex != undefined &&
                         questionSet.audioFileIndex < audioKeys.length
                           ? audioKeys[questionSet.audioFileIndex]
-                          : null,
+                          : questionSet.audioKey,
                       displayOrder:
                         questionSet.displayOrder ??
                         updateData.sections[idx].questions?.length +

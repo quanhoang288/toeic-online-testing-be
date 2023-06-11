@@ -334,8 +334,11 @@ export class QuestionArchiveService {
       images: IFile[];
     },
   ): Promise<void> {
-    const questionArchive = await this.questionArchiveRepository.findOneBy({
-      id: questionArchiveId,
+    const questionArchive = await this.questionArchiveRepository.findOne({
+      where: {
+        id: questionArchiveId,
+      },
+      relations: ['details'],
     });
     if (!questionArchive) {
       throw new BadRequestException('Question archive not found');
@@ -357,12 +360,14 @@ export class QuestionArchiveService {
     let audioKeys: string[] = [];
     let imageKeys: string[] = [];
 
-    if (assetFiles) {
+    if (assetFiles.audios?.length) {
       audioKeys = await Promise.all(
         assetFiles.audios.map((audioFile) =>
           this.s3Service.uploadFile(audioFile, 'audios'),
         ),
       );
+    }
+    if (assetFiles.images?.length) {
       imageKeys = await Promise.all(
         assetFiles.images.map((imageFile) =>
           this.s3Service.uploadFile(imageFile, 'images'),
@@ -371,7 +376,7 @@ export class QuestionArchiveService {
     }
 
     await Promise.all(
-      [...assetFiles.audios, ...assetFiles.images].map((file) =>
+      [...(assetFiles.audios || []), ...(assetFiles.images || [])].map((file) =>
         deleteFileAsync(file.path),
       ),
     );
@@ -398,7 +403,9 @@ export class QuestionArchiveService {
           .map((question, questionIdx) => ({
             ...question,
             orderInQuestionSet: question.orderInQuestionSet ?? questionIdx,
-            displayOrder: question.displayOrder ?? questionIdx,
+            displayOrder:
+              question.displayOrder ??
+              updateData.questions.findIndex((q) => q.id === question.id),
             sectionId: updateData.sectionId,
             audioKey:
               question.audioFileIndex != undefined &&
@@ -414,11 +421,14 @@ export class QuestionArchiveService {
 
         const questionSetsToCreate = updateData.questionSets
           .filter((questionSet) => !questionSet.id)
-          .map((questionSet, questionSetIdx) => ({
+          .map((questionSet) => ({
             ...questionSet,
             displayOrder:
               questionSet.displayOrder ??
-              (updateData.questions?.length || 0) + questionSetIdx,
+              (updateData.questions?.length || 0) +
+                updateData.questionSets.findIndex(
+                  (qs) => qs.id === questionSet.id,
+                ),
             imageKeys: questionSet.imageFileIndices
               ? imageKeys.filter((_, idx) =>
                   questionSet.imageFileIndices.includes(idx),
@@ -474,8 +484,15 @@ export class QuestionArchiveService {
           )
           .map((detail) => detail.questionSetId);
 
+        const questionsToUpdate = (updateData.questions || []).filter(
+          (question) => question.id,
+        );
+        const questionSetsToUpdate = (updateData.questionSets || []).filter(
+          (questionSet) => questionSet.id,
+        );
+
         await Promise.all([
-          ...(updateData.questions || []).map((question) =>
+          ...questionsToUpdate.map((question) =>
             this.questionService.update(
               question.id,
               {
@@ -494,7 +511,7 @@ export class QuestionArchiveService {
               queryRunner,
             ),
           ),
-          ...(updateData.questionSets || []).map((questionSet) =>
+          ...questionSetsToUpdate.map((questionSet) =>
             this.questionSetService.update(
               questionSet.id,
               {

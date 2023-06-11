@@ -89,7 +89,6 @@ export class AuthService {
 
   async login(credentials: AuthCredentialDto): Promise<AuthTokenDto> {
     const user = await this.userService.findOneByEmail(credentials.email);
-    console.log('found user', user);
     if (!user || !(await bcrypt.compare(credentials.password, user.password))) {
       throw new BadRequestException('Email or password incorrect');
     }

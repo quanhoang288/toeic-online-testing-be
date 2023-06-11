@@ -17,7 +17,6 @@ export class createQuestionArchivesTable1683453678757
             \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
             \`updated_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
             \`deleted_at\` timestamp(6) NULL,
-            UNIQUE INDEX \`idx-unique-${QUESTION_ARCHIVE_TABLE_NAME}-name\` (\`name\`),
             PRIMARY KEY (\`id\`)
         )`,
     );
@@ -29,9 +28,6 @@ export class createQuestionArchivesTable1683453678757
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      `DROP INDEX \`idx-unique-${QUESTION_ARCHIVE_TABLE_NAME}-name\` ON \`${QUESTION_ARCHIVE_TABLE_NAME}\``,
-    );
     await queryRunner.query(
       `DROP FOREIGN KEY \`fk-${QUESTION_ARCHIVE_TABLE_NAME}-section_id\` ON \`${QUESTION_ARCHIVE_TABLE_NAME}\``,
     );

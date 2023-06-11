@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, QueryRunner, Repository } from 'typeorm';
 import _ from 'lodash';
@@ -78,29 +78,31 @@ export class QuestionService {
       .getRepository(QuestionEntity)
       .findOne({ where: { id: questionId } });
     if (!question) {
-      return;
+      throw new BadRequestException('Question not found');
     }
 
-    if (updateDto.imageKey && question.imageKey) {
+    if (question.imageKey && updateDto.imageKey !== question.imageKey) {
       await this.s3Service.deleteFile(question.imageKey as string);
     }
-    if (updateDto.audioKey && question.audioKey) {
+    if (question.audioKey && updateDto.audioKey !== question.audioKey) {
       await this.s3Service.deleteFile(question.audioKey as string);
     }
 
+    const questionUpdateDto = _.pick(updateDto, [
+      'content',
+      'audioKey',
+      'imageKey',
+      'explanation',
+    ]) as Partial<QuestionDto>;
+    if (updateDto.questionSetId) {
+      questionUpdateDto.questionSetId = updateDto.questionSetId;
+    }
+    if (updateDto.orderInQuestionSet) {
+      questionUpdateDto.questionSetId = updateDto.questionSetId;
+    }
     await queryRunner.manager.getRepository(QuestionEntity).save({
       id: questionId,
-      ..._.omitBy(
-        _.pick(updateDto, [
-          'content',
-          'audioKey',
-          'imageKey',
-          'questionSetId',
-          'orderInQuestionSet',
-          'explanation',
-        ]),
-        _.isNil,
-      ),
+      ...questionUpdateDto,
     });
 
     await Promise.all(
@@ -110,11 +112,44 @@ export class QuestionService {
     );
   }
 
+  async delete(
+    questionIds: number[],
+    queryRunner?: QueryRunner,
+  ): Promise<void> {
+    const questions = await this.questionRepository.find({
+      where: {
+        id: In(questionIds),
+      },
+      relations: ['answers'],
+    });
+    const answerIdsToRemove = questions.reduce(
+      (answerIds, curQuestion) =>
+        answerIds.concat(curQuestion.answers.map((ans) => ans.id)),
+      [],
+    );
+    if (queryRunner) {
+      await queryRunner.manager
+        .getRepository(AnswerEntity)
+        .delete({ id: In(answerIdsToRemove) });
+      await queryRunner.manager
+        .getRepository(QuestionEntity)
+        .delete({ id: In(questionIds) });
+    } else {
+      await this.answerRepository.delete({
+        id: In(answerIdsToRemove),
+      });
+      await this.questionRepository.delete({ id: In(questionIds) });
+    }
+  }
+
   async bulkDeleteFromExam(
     questionIds: number[],
     examId: number,
     queryRunner?: QueryRunner,
   ): Promise<void> {
+    if (!questionIds.length) {
+      return;
+    }
     if (queryRunner) {
       await queryRunner.manager.getRepository(ExamDetailEntity).delete({
         examId,
@@ -141,6 +176,9 @@ export class QuestionService {
     questionArchiveId: number,
     queryRunner?: QueryRunner,
   ): Promise<void> {
+    if (!questionIds.length) {
+      return;
+    }
     if (queryRunner) {
       await queryRunner.manager
         .getRepository(QuestionArchiveDetailEntity)

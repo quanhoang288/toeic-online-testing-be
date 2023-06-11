@@ -1,5 +1,9 @@
 import * as fsPromises from 'fs/promises';
 
-export function deleteFileAsync(filePath: string): Promise<void> {
-  return fsPromises.unlink(filePath);
+export async function deleteFileAsync(filePath: string): Promise<void> {
+  try {
+    await fsPromises.unlink(filePath);
+  } catch (error) {
+    console.warn(error);
+  }
 }
