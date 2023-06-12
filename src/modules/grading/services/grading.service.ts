@@ -249,7 +249,7 @@ export class GradingService {
           detail.question.id,
           detail.question.answers.find((answer) => answer.isCorrect).id,
         );
-      } else {
+      } else if (detail.questionSet) {
         for (const question of detail.questionSet.questions) {
           answersByQuestion.set(
             question.id,

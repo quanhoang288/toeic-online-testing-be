@@ -11,6 +11,9 @@ export class ExamResultHistoryDto {
   examName: string;
 
   @ApiProperty()
+  isMiniTest: boolean;
+
+  @ApiProperty()
   numCorrects: number;
 
   @ApiProperty({ nullable: true })

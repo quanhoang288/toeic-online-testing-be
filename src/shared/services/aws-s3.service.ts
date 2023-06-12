@@ -35,10 +35,14 @@ export class AwsS3Service {
   }
 
   async deleteFile(key: string): Promise<void> {
+    console.log('===================================');
+    console.log(`Deleting file with key ${key}... `);
     await this.s3.deleteObject({
       Bucket: this.configService.awsS3Config.bucketName,
       Key: key,
     });
+    console.log('File deleted successfully!');
+    console.log('===================================');
   }
 
   async getFileStream(key: string): Promise<Readable> {

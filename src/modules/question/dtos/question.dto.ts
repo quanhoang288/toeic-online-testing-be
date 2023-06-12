@@ -1,6 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsNumber,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
 import { AnswerDto } from './answer.dto';
+import { Type } from 'class-transformer';
 
 export class QuestionDto {
   sectionId?: number;
@@ -47,6 +54,8 @@ export class QuestionDto {
 
   @ApiProperty({ type: [AnswerDto] })
   @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AnswerDto)
   answers: AnswerDto[];
 
   @ApiProperty({ description: 'Selected answer. Used for exam result APIs' })

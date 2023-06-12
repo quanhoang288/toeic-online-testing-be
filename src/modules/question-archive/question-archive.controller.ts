@@ -15,6 +15,7 @@ import {
   UploadedFiles,
   UseGuards,
   UseInterceptors,
+  ValidationPipe,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -43,11 +44,13 @@ import { QuestionArchiveResultHistoryDto } from './dtos/question-archive-result-
 import { RolesGuard } from '../../guards/roles.guard';
 import { PublicRoute } from '../../decorators/public-route.decorator';
 import { AdminRole } from '../../decorators/admin-role.decorator';
+import { PaginationOptionDto } from '../../common/dtos/pagination-option.dto';
 
 @Controller('question-archives')
 @ApiTags('question-archives')
 @ApiExtraModels(PaginationDto)
 @ApiExtraModels(QuestionArchiveDto)
+@ApiExtraModels(QuestionArchiveResultHistoryDto)
 export class QuestionArchiveController {
   constructor(
     private readonly questionArchiveService: QuestionArchiveService,
@@ -72,6 +75,42 @@ export class QuestionArchiveController {
   })
   async list(@Query() queryParams: QuestionArchiveFilterDto) {
     return this.questionArchiveService.list(queryParams);
+  }
+
+  @Get('result-histories')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(PaginationDto) },
+        {
+          properties: {
+            data: {
+              type: 'array',
+              items: { $ref: getSchemaPath(QuestionArchiveResultHistoryDto) },
+            },
+          },
+        },
+      ],
+    },
+  })
+  async getResultHistories(
+    @Req() req: ExpressRequest,
+    @Query(
+      new ValidationPipe({
+        transformOptions: { enableImplicitConversion: true },
+      }),
+    )
+    queryParams: PaginationOptionDto,
+  ) {
+    if (!req.user) {
+      throw new UnauthorizedException();
+    }
+    return this.questionArchiveService.getResultHistories(
+      req.user.id,
+      queryParams,
+    );
   }
 
   @Get(':id')
@@ -160,16 +199,5 @@ export class QuestionArchiveController {
   async delete(@Param('id', ParseIntPipe) questionArchiveId: number) {
     await this.questionArchiveService.delete(questionArchiveId);
     return { message: 'Question archive deleted successfully' };
-  }
-
-  @Get('/result-histories')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOkResponse({ type: [QuestionArchiveResultHistoryDto] })
-  async getResultHistories(@Req() req: ExpressRequest) {
-    if (!req.user) {
-      throw new UnauthorizedException();
-    }
-    return this.questionArchiveService.getResultHistories(req.user.id);
   }
 }

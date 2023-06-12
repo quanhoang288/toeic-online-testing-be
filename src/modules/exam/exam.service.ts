@@ -39,6 +39,8 @@ import { UserService } from '../user/user.service';
 import { ExamResultHistoryDto } from './dtos/exam-result-history.dto';
 import { ExamRegistrationEntity } from '../../database/entities/exam-registration.entity';
 import { ExamRegistrationStatus } from '../../common/constants/exam-registration-status';
+import { PaginationOptionDto } from '../../common/dtos/pagination-option.dto';
+import moment from 'moment-timezone';
 
 @Injectable()
 export class ExamService {
@@ -126,8 +128,15 @@ export class ExamService {
     });
 
     let examResults: ExamResultEntity[];
+    let examRegistration: ExamRegistrationEntity;
     if (accountId) {
       examResults = await this.examResultRepository.find({
+        where: {
+          examId,
+          accountId,
+        },
+      });
+      examRegistration = await this.examRegistrationRepository.findOne({
         where: {
           examId,
           accountId,
@@ -206,6 +215,7 @@ export class ExamService {
       timeLimitInMins: exam.timeLimitInMins,
       numParticipants: exam.numParticipants,
       sections: examDetailBySections,
+      registrationStatus: examRegistration?.status ?? null,
       examResults,
     };
   }
@@ -633,6 +643,21 @@ export class ExamService {
       throw new BadRequestException('User not found');
     }
 
+    if (!exam.startsAt) {
+      throw new BadRequestException(
+        'Exam is not configured for online registration',
+      );
+    }
+
+    const now = moment(new Date());
+
+    if (
+      now.isAfter(moment(exam.registerEndsAt)) ||
+      now.isAfter(moment(exam.startsAt).add(exam.timeLimitInMins, 'minutes'))
+    ) {
+      throw new BadRequestException('Exam registration is past due date');
+    }
+
     const existingRegistration = await this.examRegistrationRepository.findOne({
       where: {
         accountId,
@@ -805,33 +830,46 @@ export class ExamService {
     };
   }
 
-  async getResultHistories(accountId: number): Promise<ExamResultHistoryDto[]> {
+  async getResultHistories(
+    accountId: number,
+    pagination: PaginationOptionDto,
+  ): Promise<PaginationDto<ExamResultHistoryDto>> {
     const user = await this.userService.findOneById(accountId);
     if (!user) {
       throw new BadRequestException('User not found');
     }
 
+    const numRecords = await this.examResultRepository.count({
+      where: { accountId },
+    });
+
     const examResults = await this.examResultRepository.find({
-      where: {
-        accountId,
-      },
+      where: { accountId },
+      skip: pagination.skip,
+      take: pagination.perPage,
       relations: ['exam'],
       order: {
         id: Order.DESC,
       },
     });
 
-    return examResults.map((result) => ({
-      examResultId: result.id,
-      examId: result.examId,
-      examName: result.exam.name,
-      numCorrects: result.numCorrects,
-      listeningPoints: result.listeningPoints,
-      readingPoints: result.readingPoints,
-      totalPoints: result.totalPoints,
-      timeTakenInSecs: result.timeTakenInSecs,
-      createdAt: result.createdAt,
-    }));
+    return {
+      page: pagination.page,
+      pageCount: pagination.perPage,
+      totalCount: numRecords,
+      data: examResults.map((result) => ({
+        examResultId: result.id,
+        examId: result.examId,
+        examName: result.exam.name,
+        isMiniTest: result.exam.isMiniTest,
+        numCorrects: result.numCorrects,
+        listeningPoints: result.listeningPoints,
+        readingPoints: result.readingPoints,
+        totalPoints: result.totalPoints,
+        timeTakenInSecs: result.timeTakenInSecs,
+        createdAt: result.createdAt,
+      })),
+    };
   }
 
   private parseSearchParams(
@@ -840,33 +878,50 @@ export class ExamService {
     const whereCond: FindOptionsWhere<ExamEntity> = {};
 
     if (searchParams.q) {
-      whereCond.name = Like(`%${searchParams}%`);
+      whereCond.name = Like(`%${searchParams.q}%`);
     }
 
     if (searchParams.examSetId) {
       whereCond.examSetId = searchParams.examSetId;
     }
 
-    if (searchParams.registerTimeFrom) {
+    if (searchParams.isMiniTest != undefined) {
+      whereCond.isMiniTest =
+        searchParams.isMiniTest === 'true' || searchParams.isMiniTest === '1';
+    }
+
+    if (searchParams.registerTimeFromAfterOrEqual) {
       whereCond.registerStartsAt = MoreThanOrEqual(
-        new Date(searchParams.registerTimeFrom),
+        new Date(searchParams.registerTimeFromAfterOrEqual),
+      );
+    }
+    if (searchParams.registerTimeFromBeforeOrEqual) {
+      whereCond.registerStartsAt = LessThanOrEqual(
+        new Date(searchParams.registerTimeFromAfterOrEqual),
       );
     }
 
-    if (searchParams.registerTimeTo) {
-      whereCond.registerEndsAt = LessThanOrEqual(
-        new Date(searchParams.registerTimeTo),
+    if (searchParams.registerTimeToAfterOrEqual) {
+      whereCond.registerEndsAt = MoreThanOrEqual(
+        new Date(searchParams.registerTimeToAfterOrEqual),
+      );
+    }
+    if (searchParams.registerTimeToBeforeOrEqual) {
+      whereCond.registerEndsAt = MoreThanOrEqual(
+        new Date(searchParams.registerTimeToAfterOrEqual),
       );
     }
 
-    if (searchParams.startTimeFrom) {
+    if (searchParams.startTimeAfterOrEqual) {
       whereCond.startsAt = MoreThanOrEqual(
-        new Date(searchParams.startTimeFrom),
+        new Date(searchParams.startTimeAfterOrEqual),
       );
     }
 
-    if (searchParams.startTimeTo) {
-      whereCond.startsAt = LessThanOrEqual(new Date(searchParams.startTimeTo));
+    if (searchParams.startTimeBeforeOrEqual) {
+      whereCond.startsAt = LessThanOrEqual(
+        new Date(searchParams.startTimeBeforeOrEqual),
+      );
     }
 
     return whereCond;

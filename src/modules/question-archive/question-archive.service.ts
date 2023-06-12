@@ -22,6 +22,7 @@ import { QuestionArchiveAttemptResultDto } from './dtos/question-archive-attempt
 import { QuestionArchiveResultEntity } from '../../database/entities/question-archive-result.entity';
 import { UserService } from '../user/user.service';
 import { QuestionArchiveResultHistoryDto } from './dtos/question-archive-result-history.dto';
+import { PaginationOptionDto } from '../../common/dtos/pagination-option.dto';
 
 @Injectable()
 export class QuestionArchiveService {
@@ -570,32 +571,44 @@ export class QuestionArchiveService {
 
   async getResultHistories(
     accountId: number,
-  ): Promise<QuestionArchiveResultHistoryDto[]> {
+    pagination: PaginationOptionDto,
+  ): Promise<PaginationDto<QuestionArchiveResultHistoryDto>> {
     const user = await this.userService.findOneById(accountId);
     if (!user) {
       throw new BadRequestException('User not found');
     }
+
+    const numRecords = await this.questionArchiveResultRepository.count({
+      where: { accountId },
+    });
 
     const questionArchiveResults =
       await this.questionArchiveResultRepository.find({
         where: {
           accountId,
         },
+        skip: pagination.skip,
+        take: pagination.perPage,
         relations: ['questionArchive'],
         order: {
           id: Order.DESC,
         },
       });
 
-    return questionArchiveResults.map((result) => ({
-      questionArchiveResultId: result.id,
-      questionArchiveId: result.questionArchiveId,
-      questionArchiveName: result.questionArchive.name,
-      numCorrects: result.numCorrects,
-      totalQuestions: result.questionArchive.numQuestions,
-      timeTakenInSecs: result.timeTakenInSecs,
-      createdAt: result.createdAt,
-    }));
+    return {
+      page: pagination.page,
+      pageCount: pagination.perPage,
+      totalCount: numRecords,
+      data: questionArchiveResults.map((result) => ({
+        questionArchiveResultId: result.id,
+        questionArchiveId: result.questionArchiveId,
+        questionArchiveName: result.questionArchive.name,
+        numCorrects: result.numCorrects,
+        totalQuestions: result.questionArchive.numQuestions,
+        timeTakenInSecs: result.timeTakenInSecs,
+        createdAt: result.createdAt,
+      })),
+    };
   }
 
   private parseSearchParams(
