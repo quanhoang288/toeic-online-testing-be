@@ -2,6 +2,7 @@ import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import { AbstractEntity } from '../../common/models/abstract.entity';
 import { ExamEntity } from './exam.entity';
 import { AccountEntity } from './account.entity';
+import { ExamRegistrationStatus } from '../../common/constants/exam-registration-status';
 
 export const EXAM_REGISTRATION_TABLE_NAME = 'exam_registrations';
 
@@ -13,8 +14,8 @@ export class ExamRegistrationEntity extends AbstractEntity {
   @Column()
   accountId!: number;
 
-  @Column({ default: 'accepted' })
-  status!: string;
+  @Column()
+  status!: ExamRegistrationStatus;
 
   @ManyToOne(() => ExamEntity, (exam) => exam.registrations)
   @JoinColumn({ name: 'exam_id' })

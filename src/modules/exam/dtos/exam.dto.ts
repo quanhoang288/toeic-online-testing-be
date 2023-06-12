@@ -2,13 +2,15 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   IsArray,
   IsBoolean,
-  IsDate,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
+  ValidateNested,
 } from 'class-validator';
 import { ExamSectionDto } from './section.dto';
+import { Type } from 'class-transformer';
+import { ExamRegistrationStatus } from '../../../common/constants/exam-registration-status';
 
 export class ExamDto {
   @ApiProperty()
@@ -17,14 +19,14 @@ export class ExamDto {
   name: string;
 
   @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  examTypeId: number;
+  @IsNumber()
+  @IsOptional()
+  examTypeId?: number;
 
   @ApiProperty({ required: false })
   @IsBoolean()
   @IsOptional()
-  hasMultipleSections: boolean;
+  hasMultipleSections?: boolean;
 
   @ApiProperty({ nullable: true, required: false })
   @IsNumber()
@@ -32,17 +34,17 @@ export class ExamDto {
   timeLimitInMins?: number;
 
   @ApiProperty({ nullable: true, required: false })
-  @IsDate()
+  @IsString()
   @IsOptional()
   registerStartsAt?: string;
 
   @ApiProperty({ nullable: true, required: false })
-  @IsDate()
+  @IsString()
   @IsOptional()
   registerEndsAt?: string;
 
   @ApiProperty({ nullable: true, required: false })
-  @IsDate()
+  @IsString()
   @IsOptional()
   startsAt?: string;
 
@@ -53,10 +55,13 @@ export class ExamDto {
 
   @ApiProperty({ type: [ExamSectionDto] })
   @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ExamSectionDto)
   @IsNotEmpty()
   sections: ExamSectionDto[];
 
   @ApiProperty({ nullable: true })
+  @IsNumber()
   @IsOptional()
   examSetId?: number;
 }
@@ -110,4 +115,7 @@ export class ExamDetailDto extends ExamDto {
 
   @ApiProperty({ type: [ExamResult], nullable: true, required: false })
   examResults?: ExamResult[];
+
+  @ApiProperty({ nullable: true, required: false })
+  registrationStatus?: ExamRegistrationStatus;
 }

@@ -103,9 +103,8 @@ export class QuestionSetService {
       return;
     }
 
-    const questionSetOnlyData = _.omitBy(
-      _.pick(updateDto, ['title', 'content', 'audioKey']),
-    );
+    const questionSetOnlyData = _.pick(updateDto, ['content', 'audioKey']);
+
     const imagesToRemove = questionSet.images.filter(
       (existingImage) =>
         !(updateDto.imageKeys || []).some(
@@ -114,14 +113,11 @@ export class QuestionSetService {
     );
 
     if (imagesToRemove.length) {
-      await Promise.all([
-        ...imagesToRemove.map((image) =>
+      await Promise.all(
+        imagesToRemove.map((image) =>
           this.s3Service.deleteFile(image.imageKey),
         ),
-        queryRunner.manager.getRepository(QuestionSetImageEntity).delete({
-          id: In(imagesToRemove.map((image) => image.id)),
-        }),
-      ]);
+      );
     }
 
     if (questionSet.audioKey && updateDto.audioKey !== questionSet.audioKey) {
@@ -157,6 +153,9 @@ export class QuestionSetService {
           imageKey: key,
         })),
       ),
+      queryRunner.manager.getRepository(QuestionSetImageEntity).delete({
+        id: In(imagesToRemove.map((image) => image.id)),
+      }),
       this.questionService.bulkCreate(questionsToCreate, queryRunner),
       this.questionService.delete(
         questionsToRemove.map((q) => q.id),

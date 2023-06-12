@@ -13,7 +13,7 @@ export class createExamRegistrationTable1683453579347
                 \`id\` int NOT NULL AUTO_INCREMENT,
                 \`exam_id\` int NOT NULL,
                 \`account_id\` int NOT NULL,
-                \`status\` tinyint NOT NULL,
+                \`status\` varchar(255) NOT NULL,
                 \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
                 \`updated_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
                 \`deleted_at\` timestamp(6) NULL,

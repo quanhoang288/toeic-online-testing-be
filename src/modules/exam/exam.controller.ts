@@ -15,6 +15,7 @@ import {
   UploadedFiles,
   UseGuards,
   UseInterceptors,
+  ValidationPipe,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -44,11 +45,13 @@ import { AdminRole } from '../../decorators/admin-role.decorator';
 import { Request as ExpressRequest } from 'express';
 import { PublicRoute } from '../../decorators/public-route.decorator';
 import { ExamResultHistoryDto } from './dtos/exam-result-history.dto';
+import { PaginationOptionDto } from '../../common/dtos/pagination-option.dto';
 
 @Controller('exams')
 @ApiTags('exams')
 @ApiExtraModels(PaginationDto)
 @ApiExtraModels(ExamListItemDto)
+@ApiExtraModels(ExamResultHistoryDto)
 export class ExamController {
   constructor(private readonly examService: ExamService) {}
 
@@ -69,8 +72,48 @@ export class ExamController {
       ],
     },
   })
-  async list(@Query() queryParams: ExamFilterDto) {
+  async list(
+    @Query(
+      new ValidationPipe({
+        transformOptions: { enableImplicitConversion: true },
+      }),
+    )
+    queryParams: ExamFilterDto,
+  ) {
     return this.examService.list(queryParams);
+  }
+
+  @Get('result-histories')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(PaginationDto) },
+        {
+          properties: {
+            data: {
+              type: 'array',
+              items: { $ref: getSchemaPath(ExamResultHistoryDto) },
+            },
+          },
+        },
+      ],
+    },
+  })
+  async getResultHistories(
+    @Req() req: ExpressRequest,
+    @Query(
+      new ValidationPipe({
+        transformOptions: { enableImplicitConversion: true },
+      }),
+    )
+    queryParams: PaginationOptionDto,
+  ) {
+    if (!req.user) {
+      throw new UnauthorizedException();
+    }
+    return this.examService.getResultHistories(req.user.id, queryParams);
   }
 
   @Get(':id')
@@ -155,6 +198,7 @@ export class ExamController {
   @UseGuards(JwtAuthGuard)
   @ApiParam({ name: 'examId' })
   @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: ApiResponseDto })
   async registerForExam(
     @Req() req: ExpressRequest,
@@ -163,11 +207,13 @@ export class ExamController {
     if (!req.user) {
       throw new UnauthorizedException();
     }
-    return this.examService.register(examId, req.user.id);
+    await this.examService.register(examId, req.user.id);
+    return { message: 'Registered exam successfully' };
   }
 
   @Post(':examId/cancel-registration')
   @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
   @ApiParam({ name: 'examId' })
   @ApiBearerAuth()
   @ApiOkResponse({ type: ApiResponseDto })
@@ -178,17 +224,7 @@ export class ExamController {
     if (!req.user) {
       throw new UnauthorizedException();
     }
-    return this.examService.cancelRegistration(examId, req.user.id);
-  }
-
-  @Get('/result-histories')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOkResponse({ type: [ExamResultHistoryDto] })
-  async getResultHistories(@Req() req: ExpressRequest) {
-    if (!req.user) {
-      throw new UnauthorizedException();
-    }
-    return this.examService.getResultHistories(req.user.id);
+    await this.examService.cancelRegistration(examId, req.user.id);
+    return { message: 'Cancelled exam registration successfully' };
   }
 }

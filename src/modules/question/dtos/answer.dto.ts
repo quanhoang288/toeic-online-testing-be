@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class AnswerDto {
   @ApiProperty()
@@ -7,8 +7,9 @@ export class AnswerDto {
   id?: number;
 
   @ApiProperty()
-  @IsNotEmpty()
-  content: string;
+  @IsString()
+  @IsOptional()
+  content?: string;
 
   @ApiProperty()
   @IsBoolean()

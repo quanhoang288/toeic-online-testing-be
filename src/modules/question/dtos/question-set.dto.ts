@@ -5,8 +5,10 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  ValidateNested,
 } from 'class-validator';
 import { QuestionDto } from './question.dto';
+import { Type } from 'class-transformer';
 
 export class QuestionSetDto {
   sectionId?: number;
@@ -43,5 +45,7 @@ export class QuestionSetDto {
   @ApiProperty({ type: [QuestionDto] })
   @IsArray()
   @IsNotEmpty()
+  @ValidateNested({ each: true })
+  @Type(() => QuestionDto)
   questions: QuestionDto[];
 }

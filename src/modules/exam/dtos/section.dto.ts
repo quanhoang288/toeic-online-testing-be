@@ -5,10 +5,12 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  ValidateNested,
 } from 'class-validator';
 import { QuestionSetDto } from 'src/modules/question/dtos/question-set.dto';
 import { QuestionDto } from 'src/modules/question/dtos/question.dto';
 import { SectionType } from '../../../common/constants/section-type';
+import { Type } from 'class-transformer';
 
 export class ExamSectionDto {
   @ApiProperty()
@@ -37,11 +39,15 @@ export class ExamSectionDto {
   @ApiProperty({ nullable: true, required: false, type: [QuestionDto] })
   @IsOptional()
   @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => QuestionDto)
   questions?: QuestionDto[];
 
   @ApiProperty({ nullable: true, required: false, type: [QuestionSetDto] })
   @IsOptional()
   @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => QuestionSetDto)
   questionSets?: QuestionSetDto[];
 
   @ApiProperty({
