@@ -16,6 +16,11 @@ import {
   Repository,
 } from 'typeorm';
 import _ from 'lodash';
+import { CronJob, CronTime } from 'cron';
+import { uuid } from 'uuidv4';
+import moment from 'moment-timezone';
+import { SchedulerRegistry } from '@nestjs/schedule';
+import { SqsService } from '@ssut/nestjs-sqs';
 
 import { ExamDetailDto, ExamDto, ExamListItemDto } from './dtos/exam.dto';
 import { ExamEntity } from '../../database/entities/exam.entity';
@@ -40,12 +45,16 @@ import { ExamResultHistoryDto } from './dtos/exam-result-history.dto';
 import { ExamRegistrationEntity } from '../../database/entities/exam-registration.entity';
 import { ExamRegistrationStatus } from '../../common/constants/exam-registration-status';
 import { PaginationOptionDto } from '../../common/dtos/pagination-option.dto';
-import moment from 'moment-timezone';
+import { QueueNames } from '../../common/constants/queue-names';
+import { MailType } from '../../common/constants/mail-type';
+import { JobName } from '../../common/constants/job-name';
 
 @Injectable()
 export class ExamService {
   constructor(
     private readonly s3Service: AwsS3Service,
+    private readonly schedulerRegistry: SchedulerRegistry,
+    private readonly sqsService: SqsService,
     private readonly transactionService: TransactionService,
     private readonly questionService: QuestionService,
     private readonly questionSetService: QuestionSetService,
@@ -258,21 +267,21 @@ export class ExamService {
       ),
     );
 
+    let createdExam: ExamEntity;
+
     const transactionRes = await this.transactionService.runInTransaction(
       async (queryRunner: QueryRunner) => {
-        const createdExam = await queryRunner.manager
-          .getRepository(ExamEntity)
-          .save({
-            name: examDto.name,
-            examTypeId: examDto.examTypeId,
-            hasMultipleSections: examDto.hasMultipleSections || true,
-            isMiniTest: examDto.isMiniTest || false,
-            timeLimitInMins: examDto.timeLimitInMins,
-            registerStartsAt: examDto.registerStartsAt,
-            registerEndsAt: examDto.registerEndsAt,
-            startsAt: examDto.startsAt,
-            examSetId: examDto.examSetId,
-          });
+        createdExam = await queryRunner.manager.getRepository(ExamEntity).save({
+          name: examDto.name,
+          examTypeId: examDto.examTypeId,
+          hasMultipleSections: examDto.hasMultipleSections || true,
+          isMiniTest: examDto.isMiniTest || false,
+          timeLimitInMins: examDto.timeLimitInMins,
+          registerStartsAt: examDto.registerStartsAt,
+          registerEndsAt: examDto.registerEndsAt,
+          startsAt: examDto.startsAt,
+          examSetId: examDto.examSetId,
+        });
 
         const sections = await queryRunner.manager
           .getRepository(SectionEntity)
@@ -366,6 +375,28 @@ export class ExamService {
         ),
       );
       throw new InternalServerErrorException('DB operations faileds');
+    }
+
+    if (createdExam.startsAt) {
+      // schedule task to send reminder emails to registrar
+      this.schedulerRegistry.addCronJob(
+        `${JobName.SEND_MAIL}-exam-id-${createdExam.id}`,
+        new CronJob(
+          moment(createdExam.startsAt).subtract(2, 'hours').toDate(),
+          () => {
+            console.log('Putting mail sending job to queue');
+            const id = uuid();
+            this.sqsService.send(QueueNames.MAIL_SEND_QUEUE, {
+              id,
+              groupId: createdExam.id.toString(),
+              body: {
+                examId: createdExam.id,
+                type: MailType.EXAM_START_REMINDER,
+              },
+            });
+          },
+        ),
+      );
     }
   }
 
@@ -621,6 +652,20 @@ export class ExamService {
         ),
       );
       throw new InternalServerErrorException('DB operations faileds');
+    }
+
+    if (
+      updateData.startsAt &&
+      !moment(updateData.startsAt).isSame(exam.startsAt)
+    ) {
+      // Change scheduled time for mail send job
+      this.schedulerRegistry
+        .getCronJob(`${JobName.SEND_MAIL}-exam-id-${exam.id}`)
+        .setTime(
+          new CronTime(
+            moment(updateData.startsAt).subtract(2, 'hours').toDate(),
+          ),
+        );
     }
   }
 
