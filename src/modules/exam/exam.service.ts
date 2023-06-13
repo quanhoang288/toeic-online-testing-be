@@ -664,15 +664,23 @@ export class ExamService {
         examId,
       },
     });
-    if (existingRegistration) {
+    if (
+      existingRegistration &&
+      existingRegistration.status !== ExamRegistrationStatus.CANCELLED
+    ) {
       throw new BadRequestException('User already registered for this exam');
     }
 
-    await this.examRegistrationRepository.save({
-      accountId,
-      examId,
-      status: ExamRegistrationStatus.ACCEPTED,
-    });
+    if (existingRegistration) {
+      existingRegistration.status = ExamRegistrationStatus.ACCEPTED;
+      await existingRegistration.save();
+    } else {
+      await this.examRegistrationRepository.save({
+        accountId,
+        examId,
+        status: ExamRegistrationStatus.ACCEPTED,
+      });
+    }
   }
 
   async cancelRegistration(examId: number, accountId: number): Promise<void> {
@@ -695,11 +703,19 @@ export class ExamService {
       throw new BadRequestException('User not registered for this exam yet');
     }
 
-    await this.examRegistrationRepository.save({
-      accountId,
-      examId,
-      status: ExamRegistrationStatus.CANCELLED,
-    });
+    if (
+      ![
+        ExamRegistrationStatus.PENDING,
+        ExamRegistrationStatus.ACCEPTED,
+      ].includes(existingRegistration.status)
+    ) {
+      throw new BadRequestException(
+        'Registration already cancelled or rejected',
+      );
+    }
+
+    existingRegistration.status = ExamRegistrationStatus.CANCELLED;
+    await existingRegistration.save();
   }
 
   async getAttemptResult(examResultId: number): Promise<ExamAttemptResultDto> {
