@@ -62,6 +62,28 @@ export class AppConfigService {
     };
   }
 
+  get awsSESConfig(): {
+    region: string;
+    sourceEmail: string;
+  } {
+    return {
+      region: this.getString('AWS_SES_REGION'),
+      sourceEmail: this.getString('AWS_SES_SOURCE_EMAIL'),
+    };
+  }
+
+  get awsSQSConfig(): {
+    region: string;
+    mailQueueName: string;
+    mailQueueUrl: string;
+  } {
+    return {
+      region: this.getString('AWS_SQS_REGION'),
+      mailQueueName: this.getString('AWS_SQS_MAIL_QUEUE_NAME'),
+      mailQueueUrl: this.getString('AWS_SQS_MAIL_QUEUE_URL'),
+    };
+  }
+
   get apiClientBaseUrl(): string {
     return this.getString('API_CLIENT_BASE_URL') || 'http://localhost:3000';
   }

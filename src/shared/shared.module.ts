@@ -7,10 +7,15 @@ import { GeneratorService } from './services/generator.service';
 import path from 'path';
 import multer from 'multer';
 import { TransactionService } from './services/transaction.service';
+import { SqsModule } from '@ssut/nestjs-sqs';
+import { AwsSESService } from './services/aws-ses.service';
+import { AwsSQSService } from './services/aws-sqs.service';
 
 const providers = [
   AppConfigService,
   AwsS3Service,
+  AwsSESService,
+  AwsSQSService,
   GeneratorService,
   TransactionService,
 ];
@@ -35,6 +40,18 @@ const providers = [
         }),
       }),
       inject: [AppConfigService],
+    }),
+    SqsModule.registerAsync({
+      inject: [AppConfigService],
+      useFactory: (configService: AppConfigService) => ({
+        producers: [
+          {
+            name: configService.awsSQSConfig.mailQueueName,
+            queueUrl: configService.awsSQSConfig.mailQueueUrl,
+            region: configService.awsSQSConfig.region,
+          },
+        ],
+      }),
     }),
   ],
   exports: [...providers, DatabaseModule, MulterModule],
