@@ -58,6 +58,8 @@ export class ExamService {
     private readonly examRegistrationRepository: Repository<ExamRegistrationEntity>,
     @InjectRepository(ExamResultEntity)
     private readonly examResultRepository: Repository<ExamResultEntity>,
+    @InjectRepository(SectionEntity)
+    private readonly sectionRepository: Repository<SectionEntity>,
   ) {}
 
   async list(
@@ -736,6 +738,12 @@ export class ExamService {
       throw new NotFoundException('Exam result not found');
     }
 
+    const examSections = await this.sectionRepository.find({
+      where: {
+        examTypeId: examResult.exam.examTypeId,
+      },
+    });
+
     const examResultsByQuestion = new Map<
       number,
       { selectedAnswerId: number; isCorrect: boolean }
@@ -765,7 +773,7 @@ export class ExamService {
     });
 
     const examResultDetailBySections: ExamSectionDto[] = [];
-    for (const examSection of examResult.exam.examType.sections) {
+    for (const examSection of examSections) {
       const questions = examDetails
         .filter(
           (examDetail) =>
