@@ -1,3 +1,3 @@
 export enum QueueNames {
-  MAIL_SEND_QUEUE = 'mail-send-queue',
+  MAIL_SEND_QUEUE = 'toeic-testing-mail-queue',
 }

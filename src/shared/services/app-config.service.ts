@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import {
+  SqsConsumerOptions,
+  SqsProducerOptions,
+} from '@ssut/nestjs-sqs/dist/sqs.types';
 import { isNil } from 'lodash';
+import { QueueNames } from '../../common/constants/queue-names';
 
 @Injectable()
 export class AppConfigService {
@@ -63,21 +68,51 @@ export class AppConfigService {
   }
 
   get awsSESConfig(): {
+    accessKeyId: string;
+    secretAccessKey: string;
     region: string;
     sourceEmail: string;
+    examStartRemindTemplateName: string;
   } {
     return {
+      accessKeyId: this.getString('AWS_SES_ACCESS_KEY_ID'),
+      secretAccessKey: this.getString('AWS_SES_SECRET_ACCESS_KEY'),
       region: this.getString('AWS_SES_REGION'),
       sourceEmail: this.getString('AWS_SES_SOURCE_EMAIL'),
+      examStartRemindTemplateName: this.getString(
+        'AWS_SES_EXAM_START_REMIND_TEMPLATE_NAME',
+      ),
     };
   }
 
+  get sqsProducersConfig(): SqsProducerOptions[] {
+    return [
+      {
+        name: QueueNames.MAIL_SEND_QUEUE,
+        queueUrl: this.getString('AWS_SQS_MAIL_QUEUE_URL'),
+      },
+    ];
+  }
+
+  get sqsConsumersConfig(): SqsConsumerOptions[] {
+    return [
+      {
+        name: QueueNames.MAIL_SEND_QUEUE,
+        queueUrl: this.getString('AWS_SQS_MAIL_QUEUE_URL'),
+      },
+    ];
+  }
+
   get awsSQSConfig(): {
+    accessKeyId: string;
+    secretAccessKey: string;
     region: string;
     mailQueueName: string;
     mailQueueUrl: string;
   } {
     return {
+      accessKeyId: this.getString('AWS_SQS_ACCESS_KEY_ID'),
+      secretAccessKey: this.getString('AWS_SQS_SECRET_ACCESS_KEY'),
       region: this.getString('AWS_SQS_REGION'),
       mailQueueName: this.getString('AWS_SQS_MAIL_QUEUE_NAME'),
       mailQueueUrl: this.getString('AWS_SQS_MAIL_QUEUE_URL'),

@@ -1,39 +1,61 @@
-import { Injectable } from '@nestjs/common';
-import AWS from 'aws-sdk';
+import { Injectable, Logger } from '@nestjs/common';
+import { SESClient, SendBulkTemplatedEmailCommand } from '@aws-sdk/client-ses';
+
 import { AppConfigService } from './app-config.service';
 
 @Injectable()
 export class AwsSESService {
-  private ses: AWS.SES;
+  private ses: SESClient;
+  private readonly logger = new Logger(AwsSESService.name);
 
   constructor(private readonly appConfigService: AppConfigService) {
-    this.ses = new AWS.SES({
-      region: 'ap-southeast-1',
+    this.ses = new SESClient({
+      region: this.appConfigService.awsSESConfig.region,
+      credentials: {
+        accessKeyId: this.appConfigService.awsSESConfig.accessKeyId,
+        secretAccessKey: this.appConfigService.awsSESConfig.secretAccessKey,
+      },
     });
   }
 
-  async sendBulkEmails(tos: string[]): Promise<void> {
+  async sendEmailWithTemplate(
+    recipients: {
+      address: string;
+      replacementData: Record<string, unknown>;
+    }[],
+    templateName: string,
+    defaultReplacementData: Record<string, unknown>,
+  ): Promise<boolean> {
     const params = {
-      Destinations: [
-        {
-          Destination: {
-            ToAddresses: tos,
-          },
-          ReplacementTemplateData:
-            '{ "REPLACEMENT_TAG_NAME":"REPLACEMENT_VALUE" }',
+      Destinations: recipients.map((recipient) => ({
+        Destination: {
+          ToAddresses: [recipient.address],
         },
-      ],
+        ReplacementTemplateData: JSON.stringify(recipient.replacementData),
+      })),
       Source: this.appConfigService.awsSESConfig.sourceEmail,
-      Template: 'TEMPLATE_NAME' /* required */,
-      DefaultTemplateData: '{ "REPLACEMENT_TAG_NAME":"REPLACEMENT_VALUE" }',
+      Template: templateName,
+      DefaultTemplateData: JSON.stringify(defaultReplacementData),
     };
 
+    const command = new SendBulkTemplatedEmailCommand(params);
+
     try {
-      await this.ses.sendBulkTemplatedEmail(params).promise();
+      const res = await this.ses.send(command);
+      this.logger.log('Mail sending result:', res);
+      if (res.Status.some((status) => status.Error)) {
+        this.logger.error(
+          'Error from SES:',
+          res.Status.find((status) => status.Error).Error,
+        );
+        return false;
+      }
     } catch (error) {
-      console.log('Error sending emails', error);
+      this.logger.error(error);
+      return false;
     }
 
-    console.log('Mail sent successfully');
+    this.logger.log('Mail sent successfully');
+    return true;
   }
 }

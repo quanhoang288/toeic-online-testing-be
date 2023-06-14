@@ -224,7 +224,7 @@ export class ExamController {
     if (!req.user) {
       throw new UnauthorizedException();
     }
-    await this.examService.cancelRegistration(examId, req.user.id);
+    await this.examService.cancelRegistration(examId, req.user?.id);
     return { message: 'Cancelled exam registration successfully' };
   }
 }

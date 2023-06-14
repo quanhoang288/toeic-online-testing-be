@@ -1,5 +1,12 @@
-import { Module } from '@nestjs/common';
+import {
+  DynamicModule,
+  ForwardReference,
+  Module,
+  Provider,
+  Type,
+} from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+
 import { SharedModule } from './shared/shared.module';
 import { ExamModule } from './modules/exam/exam.module';
 import { default as config } from './config';
@@ -9,8 +16,6 @@ import { ExamTypeModule } from './modules/exam-type/exam-type.module';
 import { QuestionArchiveModule } from './modules/question-archive/question-archive.module';
 import { GradingModule } from './modules/grading/grading.module';
 import { AuthModule } from './modules/auth/auth.module';
-// import { SqsModule } from '@ssut/nestjs-sqs';
-// import { AppConfigService } from './shared/services/app-config.service';
 
 @Module({
   imports: [
@@ -20,12 +25,6 @@ import { AuthModule } from './modules/auth/auth.module';
       envFilePath: process.env.NODE_ENV === 'test' ? '.env.test' : '.env',
       load: Object.values(config),
     }),
-    // SqsModule.registerAsync({
-    //   inject: [AppConfigService],
-    //   useFactory: (configService: AppConfigService) => ({
-    //     producers: configService.sqsProducersConfig,
-    //   }),
-    // }),
     AuthModule,
     ExamModule,
     QuestionArchiveModule,
@@ -35,4 +34,18 @@ import { AuthModule } from './modules/auth/auth.module';
     GradingModule,
   ],
 })
-export class AppModule {}
+export class AppModule {
+  static extend(extend: {
+    imports?: Array<
+      Type | DynamicModule | Promise<DynamicModule> | ForwardReference
+    >;
+    providers?: Provider[];
+  }): DynamicModule {
+    return {
+      module: AppModule,
+      imports: extend.imports,
+      providers: extend.providers,
+      exports: extend.providers,
+    };
+  }
+}

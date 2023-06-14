@@ -16,6 +16,7 @@ import {
   Repository,
 } from 'typeorm';
 import _ from 'lodash';
+import moment from 'moment-timezone';
 
 import { ExamDetailDto, ExamDto, ExamListItemDto } from './dtos/exam.dto';
 import { ExamEntity } from '../../database/entities/exam.entity';
@@ -40,7 +41,7 @@ import { ExamResultHistoryDto } from './dtos/exam-result-history.dto';
 import { ExamRegistrationEntity } from '../../database/entities/exam-registration.entity';
 import { ExamRegistrationStatus } from '../../common/constants/exam-registration-status';
 import { PaginationOptionDto } from '../../common/dtos/pagination-option.dto';
-import moment from 'moment-timezone';
+import { AccountEntity } from '../../database/entities/account.entity';
 
 @Injectable()
 export class ExamService {

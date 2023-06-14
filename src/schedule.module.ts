@@ -1,15 +1,16 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { SqsModule } from '@ssut/nestjs-sqs';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { ScheduleModule as NestScheduleModule } from '@nestjs/schedule';
 import { SQS } from 'aws-sdk';
+import { SqsModule } from '@ssut/nestjs-sqs';
 
 import { default as config } from './config';
-import { AppConfigService } from './shared/services/app-config.service';
-import { MailSendProcessor } from './modules/worker/mail-send.processor';
 import { SharedModule } from './shared/shared.module';
+import { ExamStartRemindTask } from './schedule/exam-start-remind.task';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { ExamEntity } from './database/entities/exam.entity';
 import { ExamRegistrationEntity } from './database/entities/exam-registration.entity';
+import { AppConfigService } from './shared/services/app-config.service';
 
 @Module({
   imports: [
@@ -19,11 +20,10 @@ import { ExamRegistrationEntity } from './database/entities/exam-registration.en
       load: Object.values(config),
     }),
     SharedModule,
-    TypeOrmModule.forFeature([ExamEntity, ExamRegistrationEntity]),
     SqsModule.registerAsync({
       inject: [AppConfigService],
       useFactory: (configService: AppConfigService) => ({
-        consumers: configService.sqsConsumersConfig.map((config) => ({
+        producers: configService.sqsProducersConfig.map((config) => ({
           ...config,
           sqs: new SQS({
             region: configService.awsSQSConfig.region,
@@ -35,7 +35,9 @@ import { ExamRegistrationEntity } from './database/entities/exam-registration.en
         })),
       }),
     }),
+    TypeOrmModule.forFeature([ExamEntity, ExamRegistrationEntity]),
+    NestScheduleModule.forRoot(),
   ],
-  providers: [MailSendProcessor],
+  providers: [ExamStartRemindTask],
 })
-export class WorkerModule {}
+export class ScheduleModule {}

@@ -25,6 +25,7 @@ import { ExamRegistrationEntity } from '../../database/entities/exam-registratio
     UserModule,
   ],
   providers: [ExamService],
+  exports: [ExamService],
   controllers: [ExamController],
 })
 export class ExamModule {}
