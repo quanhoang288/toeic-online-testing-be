@@ -11,6 +11,9 @@ export class QuestionArchiveResultHistoryDto {
   questionArchiveName: string;
 
   @ApiProperty()
+  sectionName: string;
+
+  @ApiProperty()
   numCorrects: number;
 
   @ApiProperty()

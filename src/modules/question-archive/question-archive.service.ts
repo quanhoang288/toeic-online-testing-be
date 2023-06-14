@@ -589,7 +589,11 @@ export class QuestionArchiveService {
         },
         skip: pagination.skip,
         take: pagination.perPage,
-        relations: ['questionArchive'],
+        relations: {
+          questionArchive: {
+            section: true,
+          },
+        },
         order: {
           id: Order.DESC,
         },
@@ -603,6 +607,7 @@ export class QuestionArchiveService {
         questionArchiveResultId: result.id,
         questionArchiveId: result.questionArchiveId,
         questionArchiveName: result.questionArchive.name,
+        sectionName: result.questionArchive.section?.name,
         numCorrects: result.numCorrects,
         totalQuestions: result.questionArchive.numQuestions,
         timeTakenInSecs: result.timeTakenInSecs,
