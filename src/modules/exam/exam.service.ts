@@ -6,8 +6,11 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
+  And,
   FindOptionsWhere,
   In,
+  IsNull,
+  LessThan,
   LessThanOrEqual,
   Like,
   MoreThanOrEqual,
@@ -42,6 +45,9 @@ import { ExamRegistrationEntity } from '../../database/entities/exam-registratio
 import { ExamRegistrationStatus } from '../../common/constants/exam-registration-status';
 import { PaginationOptionDto } from '../../common/dtos/pagination-option.dto';
 import { AccountEntity } from '../../database/entities/account.entity';
+import { ExamTypeEntity } from '../../database/entities/exam-type.entity';
+import { ExamType } from '../../common/constants/exam-type';
+import { UserProgressDto } from './dtos/user-progress.dto';
 
 @Injectable()
 export class ExamService {
@@ -51,6 +57,10 @@ export class ExamService {
     private readonly questionService: QuestionService,
     private readonly questionSetService: QuestionSetService,
     private readonly userService: UserService,
+    @InjectRepository(AccountEntity)
+    private readonly accountRepository: Repository<AccountEntity>,
+    @InjectRepository(ExamTypeEntity)
+    private readonly examTypeRepository: Repository<ExamTypeEntity>,
     @InjectRepository(ExamEntity)
     private readonly examRepository: Repository<ExamEntity>,
     @InjectRepository(ExamDetailEntity)
@@ -727,6 +737,7 @@ export class ExamService {
         id: examResultId,
       },
       relations: {
+        resultsBySection: true,
         detailResults: true,
         exam: {
           examType: {
@@ -739,11 +750,18 @@ export class ExamService {
       throw new NotFoundException('Exam result not found');
     }
 
-    const examSections = await this.sectionRepository.find({
-      where: {
-        examTypeId: examResult.exam.examTypeId,
-      },
-    });
+    const examSections = (
+      await this.sectionRepository.find({
+        where: {
+          examTypeId: examResult.exam.examTypeId,
+        },
+      })
+    ).filter((section) =>
+      (examResult.resultsBySection || []).some(
+        (existingResultBySection) =>
+          existingResultBySection.sectionId === section.id,
+      ),
+    );
 
     const examResultsByQuestion = new Map<
       number,
@@ -895,6 +913,129 @@ export class ExamService {
         createdAt: result.createdAt,
       })),
     };
+  }
+
+  async getUserProgress(
+    userId: number,
+    from?: string,
+    to?: string,
+  ): Promise<UserProgressDto> {
+    const user = await this.accountRepository.findOne({
+      where: { id: userId },
+    });
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    const toeicType = await this.examTypeRepository.findOne({
+      where: {
+        name: ExamType.TOEIC,
+      },
+    });
+    const examSections = await this.sectionRepository.find({
+      where: {
+        examTypeId: toeicType.id,
+      },
+    });
+
+    const whereCond: FindOptionsWhere<ExamResultEntity> = {
+      accountId: userId,
+      exam: {
+        isMiniTest: false,
+        startsAt: Not(IsNull()),
+      },
+    };
+    if (from && to) {
+      whereCond.createdAt = And(
+        MoreThanOrEqual(new Date(from)),
+        LessThan(moment(to).add(1, 'day').toDate()),
+      );
+    }
+
+    const examResults = await this.examResultRepository.find({
+      where: whereCond,
+      relations: {
+        resultsBySection: true,
+      },
+      order: {
+        id: Order.ASC,
+      },
+    });
+
+    const userProgress: UserProgressDto = {
+      histories: [],
+      stats: {
+        avgTotal: 0,
+        avgListening: 0,
+        avgReading: 0,
+        avgBySections: [],
+      },
+    };
+
+    let totalPointsOfAllExams = 0;
+    let totalListeningPointsOfAllExams = 0;
+    let totalReadingPointsOfAllExams = 0;
+    const totalNumCorrectsOfAllExamsBySection = new Map<number, number>();
+
+    for (const examResult of examResults) {
+      userProgress.histories.push({
+        createdAt: examResult.createdAt,
+        listeningPoints: examResult.listeningPoints || 0,
+        readingPoints: examResult.readingPoints || 0,
+        totalPoints: examResult.totalPoints || 0,
+      });
+      totalPointsOfAllExams += examResult.totalPoints || 0;
+      totalListeningPointsOfAllExams += examResult.listeningPoints || 0;
+      totalReadingPointsOfAllExams += examResult.readingPoints || 0;
+      for (const section of examSections) {
+        const sectionResult = (examResult.resultsBySection || []).find(
+          (existingSectionResult) =>
+            existingSectionResult.sectionId === section.id,
+        );
+        if (!sectionResult) {
+          continue;
+        }
+        if (totalNumCorrectsOfAllExamsBySection.has(section.id)) {
+          totalNumCorrectsOfAllExamsBySection.set(
+            section.id,
+            sectionResult.numCorrects,
+          );
+        } else {
+          totalNumCorrectsOfAllExamsBySection.set(
+            section.id,
+            totalNumCorrectsOfAllExamsBySection.get(section.id) +
+              sectionResult.numCorrects,
+          );
+        }
+      }
+    }
+
+    const numAttempts = examResults.length;
+    if (numAttempts) {
+      userProgress.stats.avgTotal = Math.round(
+        totalPointsOfAllExams / numAttempts,
+      );
+      userProgress.stats.avgListening = Math.round(
+        totalListeningPointsOfAllExams / numAttempts,
+      );
+      userProgress.stats.avgReading = Math.round(
+        totalReadingPointsOfAllExams / numAttempts,
+      );
+      for (const [
+        sectionId,
+        totalNumCorrects,
+      ] of totalNumCorrectsOfAllExamsBySection.entries()) {
+        const examSection = examSections.find((es) => es.id === sectionId);
+        userProgress.stats.avgBySections.push({
+          sectionId,
+          sectionName: examSection.name,
+          numQuestions: examSection.numQuestions,
+          numCorrects: Math.round(totalNumCorrects / numAttempts),
+        });
+      }
+    }
+
+    return userProgress;
   }
 
   private parseSearchParams(
