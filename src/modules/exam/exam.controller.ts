@@ -46,6 +46,8 @@ import { Request as ExpressRequest } from 'express';
 import { PublicRoute } from '../../decorators/public-route.decorator';
 import { ExamResultHistoryDto } from './dtos/exam-result-history.dto';
 import { PaginationOptionDto } from '../../common/dtos/pagination-option.dto';
+import { UserProgressFilterDto } from './dtos/user-progress-filter.dto';
+import { UserProgressDto } from './dtos/user-progress.dto';
 
 @Controller('exams')
 @ApiTags('exams')
@@ -114,6 +116,31 @@ export class ExamController {
       throw new UnauthorizedException();
     }
     return this.examService.getResultHistories(req.user.id, queryParams);
+  }
+
+  @Get('user-progress')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiQuery({ type: UserProgressFilterDto })
+  @ApiOkResponse({ type: UserProgressDto })
+  async getUserProgress(
+    @Req() req: ExpressRequest,
+    @Query(
+      new ValidationPipe({
+        transformOptions: { enableImplicitConversion: true },
+      }),
+    )
+    filterDto: UserProgressFilterDto,
+  ) {
+    if (!req.user) {
+      throw new UnauthorizedException();
+    }
+    return this.examService.getUserProgress(
+      req.user.id,
+      filterDto.from,
+      filterDto.to,
+    );
   }
 
   @Get(':id')

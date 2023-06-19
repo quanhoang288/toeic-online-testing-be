@@ -10,10 +10,12 @@ import { ExamTypeEntity } from '../../database/entities/exam-type.entity';
 import { ExamResultEntity } from '../../database/entities/exam-result.entity';
 import { UserModule } from '../user/user.module';
 import { ExamRegistrationEntity } from '../../database/entities/exam-registration.entity';
+import { AccountEntity } from '../../database/entities/account.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
+      AccountEntity,
       ExamEntity,
       ExamDetailEntity,
       SectionEntity,

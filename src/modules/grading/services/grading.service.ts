@@ -23,6 +23,7 @@ import { PointConversionService } from './point-conversion.service';
 import { ExamType } from '../../../common/constants/exam-type';
 import { SectionType } from '../../../common/constants/section-type';
 import { SectionEntity } from '../../../database/entities/section.entity';
+import { ExamResultBySectionEntity } from '../../../database/entities/exam-result-by-section.entity';
 
 @Injectable()
 export class GradingService {
@@ -145,6 +146,13 @@ export class GradingService {
           timeTakenInSecs: examAttemptDto.timeTakenInSecs,
           ...convertedPointRes,
         });
+      await queryRunner.manager.getRepository(ExamResultBySectionEntity).save(
+        examResultsBySection.map((resultBySection) => ({
+          examResultId: createdExamResult.id,
+          sectionId: resultBySection.sectionId,
+          numCorrects: resultBySection.numCorrects,
+        })),
+      );
 
       for (const examResultDetail of examResultDetails) {
         examResultDetail.examResultId = createdExamResult.id;
