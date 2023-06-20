@@ -6,6 +6,8 @@ import { RoleEntity } from '../../database/entities/role.entity';
 import { OAuthProviderEntity } from '../../database/entities/oauth-provider.entity';
 import { AccountProviderLinkingEntity } from '../../database/entities/account-provider-linking.entity';
 import { AccountHasRoleEntity } from '../../database/entities/account-has-role.entity';
+import { UserController } from './user.controller';
+import { PaymentModule } from '../payment/payment.module';
 
 @Module({
   imports: [
@@ -16,8 +18,10 @@ import { AccountHasRoleEntity } from '../../database/entities/account-has-role.e
       OAuthProviderEntity,
       AccountProviderLinkingEntity,
     ]),
+    PaymentModule,
   ],
   providers: [UserService],
+  controllers: [UserController],
   exports: [UserService],
 })
 export class UserModule {}

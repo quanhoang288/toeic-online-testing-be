@@ -1,12 +1,4 @@
-import {
-  Column,
-  Entity,
-  JoinColumn,
-  JoinTable,
-  ManyToMany,
-  ManyToOne,
-  OneToMany,
-} from 'typeorm';
+import { Column, Entity, JoinTable, ManyToMany, OneToMany } from 'typeorm';
 import { AbstractEntity } from '../../common/models/abstract.entity';
 import { RoleEntity } from './role.entity';
 import { OAuthProviderEntity } from './oauth-provider.entity';
@@ -14,6 +6,7 @@ import { ExamEntity } from './exam.entity';
 import { QuestionArchiveEntity } from './question-archive.entity';
 import { ExamResultEntity } from './exam-result.entity';
 import { ExamRegistrationEntity } from './exam-registration.entity';
+import { PaymentTransactionEntity } from './payment-transaction.entity';
 
 export const ACCOUNT_TABLE_NAME = 'accounts';
 
@@ -30,6 +23,12 @@ export class AccountEntity extends AbstractEntity {
 
   @Column({ nullable: true })
   avatar?: string;
+
+  @Column()
+  isVip: boolean;
+
+  @Column({ nullable: true })
+  vipPlanExpiresAt?: Date;
 
   @Column({ nullable: true })
   accessToken?: string;
@@ -110,6 +109,12 @@ export class AccountEntity extends AbstractEntity {
     (registration) => registration.account,
   )
   examRegistrations: ExamRegistrationEntity[];
+
+  @OneToMany(
+    () => PaymentTransactionEntity,
+    (paymentTransaction) => paymentTransaction.account,
+  )
+  paymentTransactions: PaymentTransactionEntity[];
 
   authProvider?: string;
 }

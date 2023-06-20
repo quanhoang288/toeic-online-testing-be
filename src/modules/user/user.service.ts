@@ -3,7 +3,7 @@ import {
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { QueryRunner, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import bcrypt from 'bcrypt';
 import { AccountEntity } from '../../database/entities/account.entity';
@@ -15,6 +15,9 @@ import { AccountProviderLinkingEntity } from '../../database/entities/account-pr
 import { TransactionService } from '../../shared/services/transaction.service';
 import { AccountHasRoleEntity } from '../../database/entities/account-has-role.entity';
 import { UserDto } from './dtos/user.dto';
+import { extractUserIdFromOrderInfo } from '../../common/utils/vnpay-util';
+import { VnPayPaymentResultDto } from '../payment/vnpay/dtos/vnpay-payment-result.dto';
+import moment from 'moment-timezone';
 
 @Injectable()
 export class UserService {
@@ -150,5 +153,21 @@ export class UserService {
     }
 
     return user;
+  }
+
+  async upgradeUserAfterVnpayPaymentSuccess(
+    txRes: VnPayPaymentResultDto,
+    queryRunner: QueryRunner,
+  ): Promise<void> {
+    const userId = extractUserIdFromOrderInfo(txRes.vnp_OrderInfo);
+    const user = await queryRunner.manager
+      .getRepository(AccountEntity)
+      .findOneBy({ id: parseInt(userId) });
+    if (!user) {
+      throw new InternalServerErrorException('User not found');
+    }
+    user.isVip = true;
+    user.vipPlanExpiresAt = moment(new Date()).add(43200, 'minutes').toDate();
+    await queryRunner.manager.getRepository(AccountEntity).save(user);
   }
 }

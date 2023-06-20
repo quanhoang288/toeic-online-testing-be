@@ -16,6 +16,8 @@ import { ExamTypeModule } from './modules/exam-type/exam-type.module';
 import { QuestionArchiveModule } from './modules/question-archive/question-archive.module';
 import { GradingModule } from './modules/grading/grading.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { PaymentModule } from './modules/payment/payment.module';
+import { UserModule } from './modules/user/user.module';
 
 @Module({
   imports: [
@@ -32,6 +34,8 @@ import { AuthModule } from './modules/auth/auth.module';
     ExamTypeModule,
     FileModule,
     GradingModule,
+    PaymentModule,
+    UserModule,
   ],
 })
 export class AppModule {

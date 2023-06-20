@@ -48,6 +48,8 @@ import { ExamResultHistoryDto } from './dtos/exam-result-history.dto';
 import { PaginationOptionDto } from '../../common/dtos/pagination-option.dto';
 import { UserProgressFilterDto } from './dtos/user-progress-filter.dto';
 import { UserProgressDto } from './dtos/user-progress.dto';
+import { AllowedRoles } from 'src/decorators/allowed-role.decorator';
+import { Role } from 'src/common/constants/role';
 
 @Controller('exams')
 @ApiTags('exams')
@@ -174,7 +176,7 @@ export class ExamController {
   @ApiBody({ type: ExamUploadDto })
   @ApiBearerAuth()
   @ApiCreatedResponse({ type: ApiResponseDto })
-  @AdminRole()
+  @AllowedRoles([Role.ADMIN, Role.VIP_USER])
   @UseGuards(JwtAuthGuard, RolesGuard)
   async create(
     @Body(ExamDtoParser) examDto: Partial<ExamDto>,
@@ -189,7 +191,7 @@ export class ExamController {
   }
 
   @Put(':id')
-  @AdminRole()
+  @AllowedRoles([Role.ADMIN, Role.VIP_USER])
   @UseGuards(JwtAuthGuard, RolesGuard)
   @UseInterceptors(
     FileFieldsInterceptor([{ name: 'audios' }, { name: 'images' }]),
@@ -212,7 +214,7 @@ export class ExamController {
   }
 
   @Delete(':id')
-  @AdminRole()
+  @AllowedRoles([Role.ADMIN, Role.VIP_USER])
   @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiBearerAuth()
   @ApiOkResponse({ type: ApiResponseDto })

@@ -12,6 +12,7 @@ import { ExamSetEntity } from './exam-set.entity';
 import { ExamResultEntity } from './exam-result.entity';
 import { ExamTypeEntity } from './exam-type.entity';
 import { ExamDetailEntity } from './exam-detail.entity';
+import { ExamScope } from '../../common/constants/exam-scope';
 
 export const EXAM_TABLE_NAME = 'exams';
 
@@ -28,6 +29,9 @@ export class ExamEntity extends AbstractEntity {
 
   @Column({ nullable: true })
   timeLimitInMins?: number;
+
+  @Column()
+  accessScope!: ExamScope;
 
   @Column({ nullable: true })
   examSetId?: number;
