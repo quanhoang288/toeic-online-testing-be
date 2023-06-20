@@ -942,7 +942,6 @@ export class ExamService {
       accountId: userId,
       exam: {
         isMiniTest: false,
-        startsAt: Not(IsNull()),
       },
     };
     if (from && to) {
