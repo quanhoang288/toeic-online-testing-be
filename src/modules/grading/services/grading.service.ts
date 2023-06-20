@@ -92,6 +92,7 @@ export class GradingService {
 
     const examResultsBySection: {
       numCorrects: number;
+      numQuestions: number;
       sectionId: number;
       sectionType: SectionType;
     }[] = [];
@@ -124,6 +125,7 @@ export class GradingService {
       examResultsBySection.push({
         sectionId: section.sectionId,
         sectionType: sectionData[idx].type,
+        numQuestions: sectionData[idx].numQuestions,
         numCorrects: numCorrectQuestionsInSection,
       });
     }
@@ -143,6 +145,11 @@ export class GradingService {
           isVirtual: false,
           isPartial: examAttemptDto.isPartial || false,
           numCorrects,
+          numQuestions: examResultsBySection.reduce(
+            (totalNumQuestions, curSectionRes) =>
+              totalNumQuestions + curSectionRes.numQuestions,
+            0,
+          ),
           timeTakenInSecs: examAttemptDto.timeTakenInSecs,
           ...convertedPointRes,
         });

@@ -890,9 +890,7 @@ export class ExamService {
       skip: pagination.skip,
       take: pagination.perPage,
       relations: {
-        exam: {
-          examType: true,
-        },
+        exam: true,
       },
       order: {
         id: Order.DESC,
@@ -910,7 +908,7 @@ export class ExamService {
         isMiniTest: result.exam.isMiniTest,
         numCorrects: result.numCorrects,
         isPartial: result.isPartial,
-        numQuestions: result.exam?.examType?.numQuestions || 0,
+        numQuestions: result.numQuestions,
         listeningPoints: result.listeningPoints,
         readingPoints: result.readingPoints,
         totalPoints: result.totalPoints,
@@ -982,15 +980,18 @@ export class ExamService {
     const totalNumCorrectsOfAllExamsBySection = new Map<number, number>();
 
     for (const examResult of examResults) {
-      userProgress.histories.push({
-        createdAt: examResult.createdAt,
-        listeningPoints: examResult.listeningPoints || 0,
-        readingPoints: examResult.readingPoints || 0,
-        totalPoints: examResult.totalPoints || 0,
-      });
-      totalPointsOfAllExams += examResult.totalPoints || 0;
-      totalListeningPointsOfAllExams += examResult.listeningPoints || 0;
-      totalReadingPointsOfAllExams += examResult.readingPoints || 0;
+      if (!examResult.isPartial) {
+        userProgress.histories.push({
+          createdAt: examResult.createdAt,
+          listeningPoints: examResult.listeningPoints || 0,
+          readingPoints: examResult.readingPoints || 0,
+          totalPoints: examResult.totalPoints || 0,
+        });
+        totalPointsOfAllExams += examResult.totalPoints || 0;
+        totalListeningPointsOfAllExams += examResult.listeningPoints || 0;
+        totalReadingPointsOfAllExams += examResult.readingPoints || 0;
+      }
+
       for (const section of examSections) {
         const sectionResult = (examResult.resultsBySection || []).find(
           (existingSectionResult) =>
@@ -999,7 +1000,7 @@ export class ExamService {
         if (!sectionResult) {
           continue;
         }
-        if (totalNumCorrectsOfAllExamsBySection.has(section.id)) {
+        if (!totalNumCorrectsOfAllExamsBySection.has(section.id)) {
           totalNumCorrectsOfAllExamsBySection.set(
             section.id,
             sectionResult.numCorrects,
@@ -1014,16 +1015,19 @@ export class ExamService {
       }
     }
 
+    const numFullTestAttempts = examResults.filter(
+      (result) => !result.isPartial,
+    ).length;
     const numAttempts = examResults.length;
     if (numAttempts) {
       userProgress.stats.avgTotal = Math.round(
-        totalPointsOfAllExams / numAttempts,
+        totalPointsOfAllExams / numFullTestAttempts,
       );
       userProgress.stats.avgListening = Math.round(
-        totalListeningPointsOfAllExams / numAttempts,
+        totalListeningPointsOfAllExams / numFullTestAttempts,
       );
       userProgress.stats.avgReading = Math.round(
-        totalReadingPointsOfAllExams / numAttempts,
+        totalReadingPointsOfAllExams / numFullTestAttempts,
       );
       for (const [
         sectionId,
