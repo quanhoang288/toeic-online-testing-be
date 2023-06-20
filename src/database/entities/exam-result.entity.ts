@@ -24,6 +24,9 @@ export class ExamResultEntity extends AbstractEntity {
   @Column()
   numCorrects!: number;
 
+  @Column()
+  numQuestions!: number;
+
   @Column({ nullable: true })
   listeningPoints?: number;
 

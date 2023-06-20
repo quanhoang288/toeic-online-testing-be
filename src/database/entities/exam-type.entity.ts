@@ -10,6 +10,9 @@ export class ExamTypeEntity extends AbstractEntity {
   name!: string;
 
   @Column()
+  numQuestions!: number;
+
+  @Column({ nullable: true })
   readingPoints?: number;
 
   @Column({ nullable: true })
