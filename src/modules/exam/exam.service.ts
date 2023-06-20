@@ -890,9 +890,8 @@ export class ExamService {
       skip: pagination.skip,
       take: pagination.perPage,
       relations: {
-        exam: true,
-        resultsBySection: {
-          section: true,
+        exam: {
+          examType: true,
         },
       },
       order: {
@@ -911,11 +910,7 @@ export class ExamService {
         isMiniTest: result.exam.isMiniTest,
         numCorrects: result.numCorrects,
         isPartial: result.isPartial,
-        numQuestions: (result.resultsBySection || []).reduce(
-          (totalNumQuestions, curSectionRes) =>
-            totalNumQuestions + curSectionRes.section.numQuestions,
-          0,
-        ),
+        numQuestions: result.exam?.examType?.numQuestions || 0,
         listeningPoints: result.listeningPoints,
         readingPoints: result.readingPoints,
         totalPoints: result.totalPoints,

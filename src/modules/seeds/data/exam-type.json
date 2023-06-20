@@ -1,6 +1,7 @@
 [
   {
     "name": "toeic",
+    "numQuestions": 200,
     "readingPoints": 495,
     "listeningPoints": 495,
     "totalPoints": 990,
