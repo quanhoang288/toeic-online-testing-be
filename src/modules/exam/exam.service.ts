@@ -9,7 +9,6 @@ import {
   And,
   FindOptionsWhere,
   In,
-  IsNull,
   LessThan,
   LessThanOrEqual,
   Like,
@@ -890,7 +889,12 @@ export class ExamService {
       where: { accountId },
       skip: pagination.skip,
       take: pagination.perPage,
-      relations: ['exam'],
+      relations: {
+        exam: true,
+        resultsBySection: {
+          section: true,
+        },
+      },
       order: {
         id: Order.DESC,
       },
@@ -906,6 +910,12 @@ export class ExamService {
         examName: result.exam.name,
         isMiniTest: result.exam.isMiniTest,
         numCorrects: result.numCorrects,
+        isPartial: result.isPartial,
+        numQuestions: (result.resultsBySection || []).reduce(
+          (totalNumQuestions, curSectionRes) =>
+            totalNumQuestions + curSectionRes.section.numQuestions,
+          0,
+        ),
         listeningPoints: result.listeningPoints,
         readingPoints: result.readingPoints,
         totalPoints: result.totalPoints,

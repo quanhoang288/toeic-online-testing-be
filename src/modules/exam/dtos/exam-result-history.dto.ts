@@ -14,7 +14,13 @@ export class ExamResultHistoryDto {
   isMiniTest: boolean;
 
   @ApiProperty()
+  isPartial: boolean;
+
+  @ApiProperty()
   numCorrects: number;
+
+  @ApiProperty()
+  numQuestions: number;
 
   @ApiProperty({ nullable: true })
   listeningPoints?: number;
