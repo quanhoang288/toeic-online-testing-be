@@ -18,6 +18,7 @@ import { UserDto } from './dtos/user.dto';
 import { extractUserIdFromOrderInfo } from '../../common/utils/vnpay-util';
 import { VnPayPaymentResultDto } from '../payment/vnpay/dtos/vnpay-payment-result.dto';
 import moment from 'moment-timezone';
+import { Role } from '../../common/constants/role';
 
 @Injectable()
 export class UserService {
@@ -166,8 +167,21 @@ export class UserService {
     if (!user) {
       throw new InternalServerErrorException('User not found');
     }
-    user.isVip = true;
-    user.vipPlanExpiresAt = moment(new Date()).add(43200, 'minutes').toDate();
+
+    const vipRole = await queryRunner.manager
+      .getRepository(RoleEntity)
+      .findOne({
+        where: { name: Role.VIP_USER },
+      });
+    if (!vipRole) {
+      throw new InternalServerErrorException('VIP role not found');
+    }
+
+    await queryRunner.manager.getRepository(AccountHasRoleEntity).save({
+      accountId: user.id,
+      roleId: vipRole.id,
+      expiresAt: moment(new Date()).add(43200, 'minutes').toDate(),
+    });
     await queryRunner.manager.getRepository(AccountEntity).save(user);
   }
 }

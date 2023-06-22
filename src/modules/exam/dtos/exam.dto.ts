@@ -23,6 +23,16 @@ export class ExamDto {
   @IsOptional()
   examTypeId?: number;
 
+  @ApiProperty()
+  @IsNumber()
+  @IsOptional()
+  groupId?: number;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  accessScope: string;
+
   @ApiProperty({ required: false })
   @IsBoolean()
   @IsOptional()

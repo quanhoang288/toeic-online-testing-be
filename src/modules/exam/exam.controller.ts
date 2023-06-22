@@ -41,7 +41,6 @@ import { ApiResponseDto } from '../../common/dtos/api-response.dto';
 import { ExamAttemptResultDto } from './dtos/exam-attempt-result.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../guards/roles.guard';
-import { AdminRole } from '../../decorators/admin-role.decorator';
 import { Request as ExpressRequest } from 'express';
 import { PublicRoute } from '../../decorators/public-route.decorator';
 import { ExamResultHistoryDto } from './dtos/exam-result-history.dto';
@@ -77,6 +76,7 @@ export class ExamController {
     },
   })
   async list(
+    @Req() req: ExpressRequest,
     @Query(
       new ValidationPipe({
         transformOptions: { enableImplicitConversion: true },
@@ -84,7 +84,7 @@ export class ExamController {
     )
     queryParams: ExamFilterDto,
   ) {
-    return this.examService.list(queryParams);
+    return this.examService.list(queryParams, req.user?.id);
   }
 
   @Get('result-histories')
@@ -179,6 +179,7 @@ export class ExamController {
   @AllowedRoles([Role.ADMIN, Role.VIP_USER])
   @UseGuards(JwtAuthGuard, RolesGuard)
   async create(
+    @Req() req: ExpressRequest,
     @Body(ExamDtoParser) examDto: Partial<ExamDto>,
     @UploadedFiles()
     files: {
@@ -186,7 +187,7 @@ export class ExamController {
       images: IFile[];
     },
   ) {
-    await this.examService.create(examDto, files);
+    await this.examService.create(examDto, files, req.user?.id);
     return { message: 'Exam created successfully' };
   }
 
@@ -201,6 +202,7 @@ export class ExamController {
   @ApiBearerAuth()
   @ApiOkResponse({ type: ApiResponseDto })
   async update(
+    @Req() req: ExpressRequest,
     @Param('id', ParseIntPipe) examId: number,
     @Body(ExamDtoParser) examDto: Partial<ExamDto>,
     @UploadedFiles()
@@ -209,7 +211,7 @@ export class ExamController {
       images: IFile[];
     },
   ) {
-    await this.examService.update(examId, examDto, files);
+    await this.examService.update(examId, req.user?.id, examDto, files);
     return { message: 'Exam updated successfully' };
   }
 
@@ -218,8 +220,11 @@ export class ExamController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiBearerAuth()
   @ApiOkResponse({ type: ApiResponseDto })
-  async delete(@Param('id', ParseIntPipe) examId: number) {
-    await this.examService.delete(examId);
+  async delete(
+    @Req() req: ExpressRequest,
+    @Param('id', ParseIntPipe) examId: number,
+  ) {
+    await this.examService.delete(examId, req.user?.id);
     return { message: 'Exam deleted successfully' };
   }
 

@@ -1,4 +1,5 @@
 [
   { "name": "user", "description": "User role", "isAdmin": false },
+  { "name": "vip_user", "description": "Vip user role", "isAdmin": false },
   { "name": "admin", "description": "Admin role", "isAdmin": true }
 ]

@@ -7,6 +7,9 @@ import { QuestionArchiveEntity } from './question-archive.entity';
 import { ExamResultEntity } from './exam-result.entity';
 import { ExamRegistrationEntity } from './exam-registration.entity';
 import { PaymentTransactionEntity } from './payment-transaction.entity';
+import { GroupEntity } from './group.entity';
+import { AccountHasRoleEntity } from './account-has-role.entity';
+import moment from 'moment-timezone';
 
 export const ACCOUNT_TABLE_NAME = 'accounts';
 
@@ -24,12 +27,6 @@ export class AccountEntity extends AbstractEntity {
   @Column({ nullable: true })
   avatar?: string;
 
-  @Column()
-  isVip: boolean;
-
-  @Column({ nullable: true })
-  vipPlanExpiresAt?: Date;
-
   @Column({ nullable: true })
   accessToken?: string;
 
@@ -41,6 +38,12 @@ export class AccountEntity extends AbstractEntity {
 
   @Column({ nullable: true })
   refreshTokenExpiresAt?: Date;
+
+  @ManyToMany(() => GroupEntity, (group) => group.members)
+  groups: GroupEntity[];
+
+  @OneToMany(() => AccountHasRoleEntity, (accHasRole) => accHasRole.account)
+  accountHasRoles: AccountHasRoleEntity[];
 
   @ManyToMany(() => RoleEntity, (role) => role.accounts)
   @JoinTable({
@@ -117,4 +120,22 @@ export class AccountEntity extends AbstractEntity {
   paymentTransactions: PaymentTransactionEntity[];
 
   authProvider?: string;
+
+  hasRole(roleId: number): boolean {
+    const now = new Date();
+    if (!this.accountHasRoles.length) {
+      return false;
+    }
+
+    const accHasRole = this.accountHasRoles.find(
+      (accHasRole) => accHasRole.roleId === roleId,
+    );
+    if (!accHasRole) {
+      return false;
+    }
+
+    return (
+      accHasRole.expiresAt && moment(now).isSameOrAfter(accHasRole.expiresAt)
+    );
+  }
 }

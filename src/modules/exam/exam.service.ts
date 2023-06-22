@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -47,6 +48,8 @@ import { AccountEntity } from '../../database/entities/account.entity';
 import { ExamTypeEntity } from '../../database/entities/exam-type.entity';
 import { ExamType } from '../../common/constants/exam-type';
 import { UserProgressDto } from './dtos/user-progress.dto';
+import { ExamScope } from '../../common/constants/exam-scope';
+import { Role } from '../../common/constants/role';
 
 @Injectable()
 export class ExamService {
@@ -74,8 +77,31 @@ export class ExamService {
 
   async list(
     searchParams: ExamFilterDto,
+    authUserId: number,
   ): Promise<PaginationDto<ExamListItemDto>> {
+    const user = await this.accountRepository.findOne({
+      where: { id: authUserId },
+      relations: ['groups', 'roles'],
+    });
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
     const whereCond = this.parseSearchParams(searchParams);
+
+    const isAdmin = user.roles.some((role) => role.isAdmin);
+    const accessScopeFilter = [];
+    if (!isAdmin && user.roles.some((role) => role.name === Role.VIP_USER)) {
+      accessScopeFilter.push(ExamScope.PUBLIC, ExamScope.VIP);
+    }
+    if (accessScopeFilter.length) {
+      whereCond.accessScope = In(accessScopeFilter);
+    }
+    const userGroupIds = user.groups.map((group) => group.id);
+    if (searchParams.groupId) {
+      whereCond.groupId = searchParams.groupId;
+    } else if (!isAdmin && userGroupIds.length) {
+      whereCond.groupId = In(userGroupIds);
+    }
 
     const numRecords = await this.examRepository.count({
       where: whereCond,
@@ -219,6 +245,7 @@ export class ExamService {
       id: exam.id,
       name: exam.name,
       examTypeId: exam.examTypeId,
+      accessScope: exam.accessScope,
       hasMultipleSections: exam.hasMultipleSections,
       isMiniTest: exam.isMiniTest,
       registerStartsAt: exam.registerStartsAt?.toISOString(),
@@ -238,7 +265,27 @@ export class ExamService {
       audios: IFile[];
       images: IFile[];
     },
+    authUserId: number,
   ): Promise<void> {
+    const user = await this.accountRepository.findOne({
+      where: {
+        id: authUserId,
+      },
+      relations: ['groups', 'roles'],
+    });
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    if (
+      examDto.groupId &&
+      !user.roles.some((role) => role.isAdmin) &&
+      !user.groups.some((group) => group.id === examDto.groupId)
+    ) {
+      throw new ForbiddenException(
+        'User not allowed to create exam of a different group',
+      );
+    }
     // Validation
     const existingExamWithName = await this.examRepository.findOneBy({
       name: examDto.name,
@@ -277,6 +324,8 @@ export class ExamService {
           .save({
             name: examDto.name,
             examTypeId: examDto.examTypeId,
+            accessScope: examDto.accessScope as ExamScope,
+            groupId: examDto.groupId,
             hasMultipleSections: examDto.hasMultipleSections || true,
             isMiniTest: examDto.isMiniTest || false,
             timeLimitInMins: examDto.timeLimitInMins,
@@ -383,12 +432,33 @@ export class ExamService {
 
   async update(
     examId: number,
+    authUserId: number,
     updateData: Partial<ExamDto>,
     assetFiles?: {
       audios: IFile[];
       images: IFile[];
     },
   ): Promise<void> {
+    const user = await this.accountRepository.findOne({
+      where: {
+        id: authUserId,
+      },
+      relations: ['groups', 'roles'],
+    });
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    if (
+      updateData.groupId &&
+      !user.roles.some((role) => role.isAdmin) &&
+      !user.groups.some((group) => group.id === updateData.groupId)
+    ) {
+      throw new ForbiddenException(
+        'User not allowed to create exam of a different group',
+      );
+    }
+
     const exam = await this.examRepository.findOne({
       where: { id: examId },
       relations: {
@@ -443,6 +513,8 @@ export class ExamService {
               'timeLimitInMins',
               'registerStartsAt',
               'registerEndsAt',
+              'groupId',
+              'accessScope',
               'startsAt',
               'isMiniTest',
               'numParticipant',
@@ -636,10 +708,34 @@ export class ExamService {
     }
   }
 
-  async delete(examId: number): Promise<void> {
+  async delete(examId: number, authUserId: number): Promise<void> {
+    const user = await this.accountRepository.findOne({
+      where: {
+        id: authUserId,
+      },
+      relations: ['groups', 'roles'],
+    });
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
     const exam = await this.examRepository.findOneBy({ id: examId });
     if (!exam) {
       throw new BadRequestException('Exam not found');
+    }
+
+    const isAdmin = user.roles.some((role) => role.isAdmin);
+
+    if (
+      exam.groupId &&
+      !isAdmin &&
+      !user.groups.some((group) => group.id === exam.groupId)
+    ) {
+      throw new ForbiddenException(
+        'Not allowed to delete exam of another group',
+      );
+    } else if (!exam.groupId && !isAdmin) {
+      throw new ForbiddenException('User is not admin');
     }
 
     await this.examRepository.softDelete(examId);

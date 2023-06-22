@@ -13,6 +13,9 @@ export class AccountHasRoleEntity extends AbstractEntity {
   @Column()
   accountId!: number;
 
+  @Column({ nullable: true })
+  expiresAt?: Date;
+
   @ManyToOne(() => RoleEntity)
   @JoinColumn({ name: 'role_id' })
   role: RoleEntity;

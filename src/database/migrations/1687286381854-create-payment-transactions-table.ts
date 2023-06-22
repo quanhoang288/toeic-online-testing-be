@@ -31,7 +31,7 @@ export class createPaymentTransactionsTable1687286381854
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
-      `DROP FOREIGN KEY \`fk-${PAYMENT_TRANSACTION_TABLE_NAME}-account\` ON \`${PAYMENT_TRANSACTION_TABLE_NAME}\``,
+      `DROP FOREIGN KEY \`fk-${PAYMENT_TRANSACTION_TABLE_NAME}-account_id\` ON \`${PAYMENT_TRANSACTION_TABLE_NAME}\``,
     );
     await queryRunner.query(`DROP TABLE \`${PAYMENT_TRANSACTION_TABLE_NAME}\``);
   }
