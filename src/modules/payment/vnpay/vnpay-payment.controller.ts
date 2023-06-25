@@ -15,10 +15,11 @@ import { Request, Response } from 'express';
 import { VnpayPaymentService } from './vnpay-payment.service';
 import { VnPayPaymentResultDto } from './dtos/vnpay-payment-result.dto';
 import { UPGRADE_USER_ORDER_INFO_PATTERN } from '../../../common/utils/vnpay-util';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 
 @Controller('payment/vnpay')
+@ApiTags('payment')
 export class VnpayPaymentController {
   constructor(private readonly vnpayPaymentService: VnpayPaymentService) {}
 

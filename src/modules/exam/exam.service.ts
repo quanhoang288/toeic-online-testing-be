@@ -50,6 +50,7 @@ import { ExamType } from '../../common/constants/exam-type';
 import { UserProgressDto } from './dtos/user-progress.dto';
 import { ExamScope } from '../../common/constants/exam-scope';
 import { Role } from '../../common/constants/role';
+import { GroupRequestToJoinStatus } from '../group/enums/group-request-to-join-status';
 
 @Injectable()
 export class ExamService {
@@ -96,7 +97,11 @@ export class ExamService {
     if (accessScopeFilter.length) {
       whereCond.accessScope = In(accessScopeFilter);
     }
-    const userGroupIds = user.groups.map((group) => group.id);
+    const userGroupIds = (user.accountGroups || []).map(
+      (accGroup) =>
+        accGroup.groupId &&
+        accGroup.requestToJoinStatus === GroupRequestToJoinStatus.ACCEPTED,
+    );
     if (searchParams.groupId) {
       whereCond.groupId = searchParams.groupId;
     } else if (!isAdmin && userGroupIds.length) {
@@ -280,7 +285,9 @@ export class ExamService {
     if (
       examDto.groupId &&
       !user.roles.some((role) => role.isAdmin) &&
-      !user.groups.some((group) => group.id === examDto.groupId)
+      !user.accountGroups.some(
+        (accGroup) => accGroup.groupId === examDto.groupId && accGroup.isAdmin,
+      )
     ) {
       throw new ForbiddenException(
         'User not allowed to create exam of a different group',
@@ -317,6 +324,10 @@ export class ExamService {
       ),
     );
 
+    console.log(examDto.registerStartsAt, examDto.registerEndsAt);
+    console.log(moment(examDto.registerEndsAt).format('YYYYMMDD HH:mm'));
+    console.log(new Date(examDto.registerStartsAt));
+
     const transactionRes = await this.transactionService.runInTransaction(
       async (queryRunner: QueryRunner) => {
         const createdExam = await queryRunner.manager
@@ -329,9 +340,15 @@ export class ExamService {
             hasMultipleSections: examDto.hasMultipleSections || true,
             isMiniTest: examDto.isMiniTest || false,
             timeLimitInMins: examDto.timeLimitInMins,
-            registerStartsAt: examDto.registerStartsAt,
-            registerEndsAt: examDto.registerEndsAt,
-            startsAt: examDto.startsAt,
+            registerStartsAt: examDto.registerStartsAt
+              ? moment(examDto.registerStartsAt).format('YYYYMMDD HH:mm')
+              : undefined,
+            registerEndsAt: examDto.registerEndsAt
+              ? moment(examDto.registerEndsAt).format('YYYYMMDD HH:mm')
+              : undefined,
+            startsAt: examDto.startsAt
+              ? moment(examDto.startsAt).format('YYYYMMDD HH:mm')
+              : undefined,
             examSetId: examDto.examSetId,
           });
 
@@ -452,11 +469,12 @@ export class ExamService {
     if (
       updateData.groupId &&
       !user.roles.some((role) => role.isAdmin) &&
-      !user.groups.some((group) => group.id === updateData.groupId)
+      !(user.accountGroups || []).some(
+        (accGroup) =>
+          accGroup.groupId === updateData.groupId && accGroup.isAdmin,
+      )
     ) {
-      throw new ForbiddenException(
-        'User not allowed to create exam of a different group',
-      );
+      throw new ForbiddenException('User is not admin of group');
     }
 
     const exam = await this.examRepository.findOne({
@@ -724,18 +742,14 @@ export class ExamService {
       throw new BadRequestException('Exam not found');
     }
 
-    const isAdmin = user.roles.some((role) => role.isAdmin);
-
     if (
       exam.groupId &&
-      !isAdmin &&
-      !user.groups.some((group) => group.id === exam.groupId)
+      !user.roles.some((role) => role.isAdmin) &&
+      !(user.accountGroups || []).some(
+        (accGroup) => accGroup.groupId === exam.groupId && accGroup.isAdmin,
+      )
     ) {
-      throw new ForbiddenException(
-        'Not allowed to delete exam of another group',
-      );
-    } else if (!exam.groupId && !isAdmin) {
-      throw new ForbiddenException('User is not admin');
+      throw new ForbiddenException('User is not admin of the group');
     }
 
     await this.examRepository.softDelete(examId);

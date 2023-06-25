@@ -10,6 +10,7 @@ import { PaymentTransactionEntity } from './payment-transaction.entity';
 import { GroupEntity } from './group.entity';
 import { AccountHasRoleEntity } from './account-has-role.entity';
 import moment from 'moment-timezone';
+import { AccountGroupEntity } from './account-group.entity';
 
 export const ACCOUNT_TABLE_NAME = 'accounts';
 
@@ -39,8 +40,8 @@ export class AccountEntity extends AbstractEntity {
   @Column({ nullable: true })
   refreshTokenExpiresAt?: Date;
 
-  @ManyToMany(() => GroupEntity, (group) => group.members)
-  groups: GroupEntity[];
+  @OneToMany(() => AccountGroupEntity, (accGroup) => accGroup.account)
+  accountGroups: AccountGroupEntity[];
 
   @OneToMany(() => AccountHasRoleEntity, (accHasRole) => accHasRole.account)
   accountHasRoles: AccountHasRoleEntity[];

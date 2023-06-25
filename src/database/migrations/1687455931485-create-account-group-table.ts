@@ -14,6 +14,7 @@ export class createAccountGroupTable1687455931485
                         \`account_id\` int NOT NULL,
                         \`group_id\` int NOT NULL,
                         \`is_admin\` tinyint(2) NOT NULL DEFAULT 0,
+                        \`request_to_join_status\` varchar(255) NOT NULL,
                         \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
                         \`updated_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
                         PRIMARY KEY (\`id\`)

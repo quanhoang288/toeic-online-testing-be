@@ -8,20 +8,21 @@ export class createGroupChannelsTable1687455919249
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
       `CREATE TABLE \`${GROUP_CHANNEL_TABLE_NAME}\`
-                (
-                    \`id\` int NOT NULL AUTO_INCREMENT,
-                    \`group_id\` int NOT NULL,
-                    \`name\` varchar(255) NOT NULL,
-                    \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-                    \`updated_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
-                    PRIMARY KEY (\`id\`)
-                )`,
+      (
+          \`id\` int NOT NULL AUTO_INCREMENT,
+          \`group_id\` int NOT NULL,
+          \`name\` varchar(255) NOT NULL,
+          \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+          \`updated_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+          \`deleted_at\` timestamp(6) NULL,
+          PRIMARY KEY (\`id\`)
+      )`,
     );
     await queryRunner.query(`
-    ALTER TABLE \`${GROUP_CHANNEL_TABLE_NAME}\`
-      ADD CONSTRAINT \`fk-${GROUP_CHANNEL_TABLE_NAME}-group_id\`
-        FOREIGN KEY (\`group_id\`) REFERENCES \`${GROUP_TABLE_NAME}\` (\`id\`) ON DELETE CASCADE ON UPDATE CASCADE
-  `);
+      ALTER TABLE \`${GROUP_CHANNEL_TABLE_NAME}\`
+        ADD CONSTRAINT \`fk-${GROUP_CHANNEL_TABLE_NAME}-group_id\`
+          FOREIGN KEY (\`group_id\`) REFERENCES \`${GROUP_TABLE_NAME}\` (\`id\`) ON DELETE CASCADE ON UPDATE CASCADE
+    `);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

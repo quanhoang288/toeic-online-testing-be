@@ -42,6 +42,7 @@ export class UserService {
       where: { id: userId },
       relations: {
         roles: withRoles || false,
+        accountGroups: true,
       },
     });
   }

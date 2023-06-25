@@ -1,15 +1,9 @@
-import {
-  Column,
-  Entity,
-  JoinTable,
-  ManyToMany,
-  ManyToOne,
-  OneToMany,
-} from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
 import { AbstractEntity } from '../../common/models/abstract.entity';
 import { GroupChannelEntity } from './group-channel.entity';
 import { ExamEntity } from './exam.entity';
 import { AccountEntity } from './account.entity';
+import { AccountGroupEntity } from './account-group.entity';
 
 export const GROUP_TABLE_NAME = 'groups';
 
@@ -21,29 +15,19 @@ export class GroupEntity extends AbstractEntity {
   @Column()
   isPublic: boolean;
 
-  @Column({ nullable: true })
-  createdBy?: number;
+  @Column()
+  createdBy: number;
 
   @ManyToOne(() => AccountEntity)
-  creator?: AccountEntity;
+  @JoinColumn({ name: 'created_by' })
+  creator: AccountEntity;
 
-  @ManyToOne(() => GroupChannelEntity, (groupChannel) => groupChannel.group)
+  @OneToMany(() => GroupChannelEntity, (groupChannel) => groupChannel.group)
   channels: GroupChannelEntity[];
 
   @OneToMany(() => ExamEntity, (exam) => exam.group)
   exams: ExamEntity[];
 
-  @ManyToMany(() => AccountEntity, (acc) => acc.groups)
-  @JoinTable({
-    name: 'account_group',
-    joinColumn: {
-      name: 'group_id',
-      referencedColumnName: 'id',
-    },
-    inverseJoinColumn: {
-      name: 'account_id',
-      referencedColumnName: 'id',
-    },
-  })
-  members: AccountEntity[];
+  @OneToMany(() => AccountGroupEntity, (accGroup) => accGroup.group)
+  accountGroups: AccountGroupEntity[];
 }
