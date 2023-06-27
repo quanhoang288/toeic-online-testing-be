@@ -16,6 +16,7 @@ import { AppConfigService } from '../../shared/services/app-config.service';
 import { UPGRADE_USER_ORDER_INFO_PATTERN } from '../../common/utils/vnpay-util';
 import { UserService } from './user.service';
 import { VnPayPaymentResultDto } from '../payment/vnpay/dtos/vnpay-payment-result.dto';
+import { UserFilterDto } from './dtos/user-filter.dto';
 
 @Controller('users')
 @ApiTags('users')
@@ -25,6 +26,18 @@ export class UserController {
     private readonly userService: UserService,
     private readonly appConfigService: AppConfigService,
   ) {}
+
+  // @Get()
+  // async list(
+  //   @Query(
+  //     new ValidationPipe({
+  //       transformOptions: { enableImplicitConversion: true },
+  //     }),
+  //   )
+  //   filterDto: UserFilterDto,
+  // ) {
+  //   return this.userService.list(filterDto);
+  // }
 
   @Post('request-vip-upgrade')
   @ApiBearerAuth()

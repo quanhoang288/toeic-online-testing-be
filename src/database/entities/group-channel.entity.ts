@@ -1,6 +1,7 @@
-import { Column, Entity, ManyToOne } from 'typeorm';
+import { Column, Entity, ManyToOne, OneToMany } from 'typeorm';
 import { AbstractEntity } from '../../common/models/abstract.entity';
 import { GroupEntity } from './group.entity';
+import { ChannelPostEntity } from './channel-post.entity';
 
 export const GROUP_CHANNEL_TABLE_NAME = 'group_channels';
 
@@ -14,4 +15,7 @@ export class GroupChannelEntity extends AbstractEntity {
 
   @ManyToOne(() => GroupEntity, (group) => group.channels)
   group: GroupEntity;
+
+  @OneToMany(() => ChannelPostEntity, (post) => post.channel)
+  posts: ChannelPostEntity[];
 }

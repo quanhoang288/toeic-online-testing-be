@@ -116,6 +116,8 @@ export class UserService {
         }
         const newUser = this.accountRepository.create({
           email: profileDto.email,
+          username: profileDto.name,
+          avatar: profileDto.profileUrl,
         });
         user = await queryRunner.manager
           .getRepository(AccountEntity)
@@ -126,6 +128,10 @@ export class UserService {
           roleId: userRole.id,
         });
         user.roles = [userRole];
+      } else {
+        user.username = profileDto.name;
+        user.avatar = profileDto.profileUrl;
+        await queryRunner.manager.getRepository(AccountEntity).save(user);
       }
 
       const existingLink = await this.accountProviderRepository.findOne({

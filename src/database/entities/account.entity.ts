@@ -7,10 +7,10 @@ import { QuestionArchiveEntity } from './question-archive.entity';
 import { ExamResultEntity } from './exam-result.entity';
 import { ExamRegistrationEntity } from './exam-registration.entity';
 import { PaymentTransactionEntity } from './payment-transaction.entity';
-import { GroupEntity } from './group.entity';
 import { AccountHasRoleEntity } from './account-has-role.entity';
 import moment from 'moment-timezone';
 import { AccountGroupEntity } from './account-group.entity';
+import { ChannelPostEntity } from './channel-post.entity';
 
 export const ACCOUNT_TABLE_NAME = 'accounts';
 
@@ -39,6 +39,9 @@ export class AccountEntity extends AbstractEntity {
 
   @Column({ nullable: true })
   refreshTokenExpiresAt?: Date;
+
+  @OneToMany(() => ChannelPostEntity, (post) => post.creator)
+  createdPosts: ChannelPostEntity[];
 
   @OneToMany(() => AccountGroupEntity, (accGroup) => accGroup.account)
   accountGroups: AccountGroupEntity[];

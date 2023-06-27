@@ -12,26 +12,31 @@ import {
   UseGuards,
   ValidationPipe,
 } from '@nestjs/common';
-import { GroupService } from './services/group.service';
+import { GroupService } from '../services/group.service';
 import { Request } from 'express';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiCreatedResponse,
   ApiExtraModels,
   ApiOkResponse,
   ApiTags,
   getSchemaPath,
 } from '@nestjs/swagger';
-import { GroupRequestToJoinDto } from './dtos/group-request-to-join.dto';
-import { GroupDto, GroupListItemDto } from './dtos/group.dto';
-import { ApiResponseDto } from '../../common/dtos/api-response.dto';
-import { AllowedRoles } from '../../decorators/allowed-role.decorator';
-import { Role } from '../../common/constants/role';
-import { RolesGuard } from '../../guards/roles.guard';
-import { GroupMemberDto } from './dtos/group-member.dto';
-import { GroupFilterDto } from './dtos/group-filter.dto';
-import { PaginationDto } from '../../common/dtos/pagination.dto';
+import {
+  GroupRequestToJoinDto,
+  RequestToJoinGroupResponseDto,
+} from '../dtos/group-request-to-join.dto';
+import { GroupDto, GroupListItemDto } from '../dtos/group.dto';
+import { ApiResponseDto } from '../../../common/dtos/api-response.dto';
+import { AllowedRoles } from '../../../decorators/allowed-role.decorator';
+import { Role } from '../../../common/constants/role';
+import { RolesGuard } from '../../../guards/roles.guard';
+import { GroupMemberDto } from '../dtos/group-member.dto';
+import { GroupFilterDto } from '../dtos/group-filter.dto';
+import { PaginationDto } from '../../../common/dtos/pagination.dto';
+import { PublicRoute } from '../../../decorators/public-route.decorator';
 
 @Controller('groups')
 @ApiTags('groups')
@@ -41,6 +46,8 @@ export class GroupController {
   constructor(private readonly groupService: GroupService) {}
 
   @Get()
+  @PublicRoute(true)
+  @UseGuards(JwtAuthGuard)
   @ApiOkResponse({
     schema: {
       allOf: [
@@ -96,6 +103,7 @@ export class GroupController {
   @ApiCreatedResponse({ type: ApiResponseDto })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @AllowedRoles([Role.ADMIN, Role.VIP_USER])
+  @ApiBody({ type: GroupDto })
   async create(@Req() req: Request, @Body() groupDto: GroupDto) {
     await this.groupService.create(groupDto, req.user.id);
     return { message: 'Create group successfully' };
@@ -104,7 +112,7 @@ export class GroupController {
   @Post(':id/request-to-join')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOkResponse({ type: ApiResponseDto })
+  @ApiOkResponse({ type: RequestToJoinGroupResponseDto })
   async requestToJoinGroup(
     @Req() req: Request,
     @Param('id', ParseIntPipe) groupId: number,
@@ -123,6 +131,34 @@ export class GroupController {
   ) {
     await this.groupService.cancelRequestToJoinGroup(groupId, req.user.id);
     return { message: 'Cancel request to join group successfully' };
+  }
+
+  @Post(':id/process-request-to-join')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOkResponse({ type: ApiResponseDto })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        accept: {
+          type: 'boolean',
+          nullable: false,
+        },
+      },
+    },
+  })
+  async processlRequestToJoinGroup(
+    @Req() req: Request,
+    @Param('id', ParseIntPipe) groupId: number,
+    @Body('accept') accept: boolean,
+  ) {
+    await this.groupService.processRequestToJoinGroup(
+      groupId,
+      req.user.id,
+      accept,
+    );
+    return { message: 'Process request to join group successfully' };
   }
 
   @Put(':id')

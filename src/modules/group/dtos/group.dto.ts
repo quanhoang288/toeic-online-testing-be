@@ -14,7 +14,7 @@ import { GroupChannelDto } from './group-channel.dto';
 import { GroupRequestToJoinDto } from './group-request-to-join.dto';
 
 export class GroupDto {
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @IsOptional()
   @IsNumber()
   id?: number;
@@ -29,21 +29,26 @@ export class GroupDto {
   @IsBoolean()
   isPublic: boolean;
 
-  @ApiProperty()
+  @ApiProperty({ type: [GroupChannelDto], required: false, nullable: true })
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => GroupChannelDto)
   channels?: GroupChannelDto[];
 
-  @ApiProperty()
+  @ApiProperty({ type: [GroupMemberDto], required: false, nullable: true })
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => GroupMemberDto)
   members?: GroupMemberDto[];
 
-  @ApiProperty()
+  @ApiProperty({
+    type: [GroupRequestToJoinDto],
+    description: 'Request to join list. Used for detail API',
+    required: false,
+    nullable: true,
+  })
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })

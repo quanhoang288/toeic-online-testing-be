@@ -324,10 +324,6 @@ export class ExamService {
       ),
     );
 
-    console.log(examDto.registerStartsAt, examDto.registerEndsAt);
-    console.log(moment(examDto.registerEndsAt).format('YYYYMMDD HH:mm'));
-    console.log(new Date(examDto.registerStartsAt));
-
     const transactionRes = await this.transactionService.runInTransaction(
       async (queryRunner: QueryRunner) => {
         const createdExam = await queryRunner.manager

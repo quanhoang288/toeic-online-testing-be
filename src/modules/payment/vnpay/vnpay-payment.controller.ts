@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Get,
-  Post,
   Query,
   Redirect,
   Req,
@@ -23,12 +22,11 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 export class VnpayPaymentController {
   constructor(private readonly vnpayPaymentService: VnpayPaymentService) {}
 
-  @Post('create-payment-url')
+  @Get('create-payment-url')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   createPaymentUrl(
     @Req() req: Request,
-    @Res() res: Response,
     @Body() paymentInfo: VnPayCreatePaymentUrlRequestDto,
   ) {
     const redirectUrl = this.vnpayPaymentService.createPaymentUrl({
@@ -36,8 +34,7 @@ export class VnpayPaymentController {
       ipAddress: (req.headers['x-forwarded-for'] as string) || req.ip,
       orderInfo: UPGRADE_USER_ORDER_INFO_PATTERN + req.user.id,
     });
-    console.log('redirect url', redirectUrl);
-    res.redirect(redirectUrl);
+    return { redirectUrl };
   }
 
   @Get('return-url')
@@ -52,7 +49,6 @@ export class VnpayPaymentController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const isChecksumValid = this.vnpayPaymentService.verifyChecksum(paymentRes);
-    console.log(isChecksumValid);
     res.cookie(
       'vnpay_code',
       isChecksumValid ? paymentRes.vnp_ResponseCode : '97',

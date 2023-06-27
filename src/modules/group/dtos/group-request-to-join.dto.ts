@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { GroupRequestToJoinStatus } from '../enums/group-request-to-join-status';
 
 export class GroupRequestToJoinDto {
   @ApiProperty()
@@ -12,4 +13,9 @@ export class GroupRequestToJoinDto {
 
   @ApiProperty({ nullable: true })
   avatar?: string;
+}
+
+export class RequestToJoinGroupResponseDto {
+  @ApiProperty({ enum: GroupRequestToJoinStatus })
+  requestToJoinStatus: GroupRequestToJoinStatus;
 }

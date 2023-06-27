@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { FindOptionsWhere, In, Repository } from 'typeorm';
+import { FindOptionsWhere, In, Like, Repository } from 'typeorm';
 import _ from 'lodash';
 
 import { GroupFilterDto } from '../dtos/group-filter.dto';
@@ -17,7 +17,10 @@ import { GroupChannelEntity } from '../../../database/entities/group-channel.ent
 import { AccountGroupEntity } from '../../../database/entities/account-group.entity';
 import { GroupDto, GroupListItemDto } from '../dtos/group.dto';
 import { GroupRequestToJoinStatus } from '../enums/group-request-to-join-status';
-import { GroupRequestToJoinDto } from '../dtos/group-request-to-join.dto';
+import {
+  GroupRequestToJoinDto,
+  RequestToJoinGroupResponseDto,
+} from '../dtos/group-request-to-join.dto';
 import { GroupMemberDto } from '../dtos/group-member.dto';
 
 @Injectable()
@@ -35,42 +38,44 @@ export class GroupService {
     searchParams: GroupFilterDto,
     authUserId?: number,
   ): Promise<PaginationDto<GroupListItemDto>> {
-    const whereCond: FindOptionsWhere<GroupEntity> = {};
+    const groupWhereCond: FindOptionsWhere<GroupEntity> = {};
     if (searchParams.name) {
-      whereCond.name = searchParams.name;
+      groupWhereCond.name = Like(`%${searchParams.name}%`);
     }
 
-    if (authUserId) {
-      const user = await this.userService.findOneById(authUserId, true);
-      const isAdmin = user.roles.some((role) => role.isAdmin);
-      if (!isAdmin) {
-        whereCond.id = In(
-          (user.accountGroups || [])
-            .filter(
-              (accGroup) =>
-                accGroup.requestToJoinStatus ===
-                GroupRequestToJoinStatus.ACCEPTED,
-            )
-            .map((accGroup) => accGroup.groupId),
-        );
-      }
+    const qb = this.groupRepository
+      .createQueryBuilder('g')
+      .innerJoinAndSelect('g.creator', 'c')
+      .where('1 = 1');
+    if (searchParams.name) {
+      qb.andWhere('g.name LIKE :name', { name: `%${searchParams.name}%` });
     }
 
-    if (searchParams.joined) {
-      whereCond.accountGroups = {
+    if (authUserId && searchParams.joined !== undefined) {
+      qb.andWhere(
+        `${
+          searchParams.joined === 'true' || searchParams.joined === '1'
+            ? 'EXISTS'
+            : 'NOT EXISTS'
+        } (SELECT 1 FROM account_group ag WHERE ag.group_id = g.id AND ag.request_to_join_status = '${
+          GroupRequestToJoinStatus.ACCEPTED
+        }' AND ag.account_id = :accountId)`,
+        { accountId: authUserId },
+      );
+    }
+
+    const numRecords = await qb.getCount();
+
+    const groups = await qb
+      .skip(searchParams.skip)
+      .take(searchParams.perPage)
+      .getMany();
+
+    const accountGroups = await this.accountGroupRepository.find({
+      where: {
+        accountId: authUserId,
         requestToJoinStatus: GroupRequestToJoinStatus.ACCEPTED,
-      };
-    }
-
-    const numRecords = await this.groupRepository.count({
-      where: whereCond,
-    });
-
-    const groups = await this.groupRepository.find({
-      where: whereCond,
-      relations: ['accountGroups', 'creator'],
-      skip: searchParams.skip,
-      take: searchParams.perPage,
+      },
     });
 
     return {
@@ -82,9 +87,9 @@ export class GroupService {
         name: group.name,
         isPublic: group.isPublic,
         creator: _.pick(group.creator, ['id', 'username', 'email', 'avatar']),
-        requestToJoinStatus: group.accountGroups.find(
-          (accGroup) => accGroup.accountId === authUserId,
-        )?.requestToJoinStatus,
+        requestToJoinStatus:
+          accountGroups.find((accGroup) => accGroup.groupId === group.id)
+            ?.requestToJoinStatus || null,
       })),
     };
   }
@@ -159,9 +164,12 @@ export class GroupService {
         });
 
       // create default channel for the newly created group if no channels are passed in dto
-      await queryRunner.manager
-        .getRepository(GroupChannelEntity)
-        .save(groupDto.channels || [{ name: 'General' }]);
+      await queryRunner.manager.getRepository(GroupChannelEntity).save(
+        (groupDto.channels || [{ name: 'General' }]).map((channel) => ({
+          ...channel,
+          groupId: createdGroup.id,
+        })),
+      );
 
       // group members
       await queryRunner.manager.getRepository(AccountGroupEntity).save(
@@ -176,6 +184,7 @@ export class GroupService {
             accountId: m.id,
             groupId: createdGroup.id,
             isAdmin: m.isAdmin,
+            requestToJoinStatus: GroupRequestToJoinStatus.ACCEPTED,
           })),
       );
     });
@@ -294,7 +303,10 @@ export class GroupService {
     });
   }
 
-  async requestToJoinGroup(groupId: number, userId: number) {
+  async requestToJoinGroup(
+    groupId: number,
+    userId: number,
+  ): Promise<RequestToJoinGroupResponseDto> {
     const user = await this.userService.findOneById(userId);
     if (!user) {
       throw new BadRequestException('User not found');
@@ -327,12 +339,18 @@ export class GroupService {
       );
     }
 
+    const requestToJoinStatus = group.isPublic
+      ? GroupRequestToJoinStatus.ACCEPTED
+      : GroupRequestToJoinStatus.PENDING;
+
     await this.accountGroupRepository.save({
       id: existingRequest?.id,
       accountId: userId,
       groupId,
-      requestToJoinStatus: GroupRequestToJoinStatus.PENDING,
+      requestToJoinStatus,
     });
+
+    return { requestToJoinStatus };
   }
 
   async cancelRequestToJoinGroup(
