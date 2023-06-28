@@ -6,6 +6,9 @@ import {
 import { QueryRunner, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import bcrypt from 'bcrypt';
+import _ from 'lodash';
+import moment from 'moment-timezone';
+
 import { AccountEntity } from '../../database/entities/account.entity';
 import { RoleEntity } from '../../database/entities/role.entity';
 import { OAuthProvider } from '../../common/constants/oauth-provider';
@@ -14,11 +17,13 @@ import { OAuthProviderEntity } from '../../database/entities/oauth-provider.enti
 import { AccountProviderLinkingEntity } from '../../database/entities/account-provider-linking.entity';
 import { TransactionService } from '../../shared/services/transaction.service';
 import { AccountHasRoleEntity } from '../../database/entities/account-has-role.entity';
-import { UserDto } from './dtos/user.dto';
+import { UserDetailDto, UserDto } from './dtos/user.dto';
 import { extractUserIdFromOrderInfo } from '../../common/utils/vnpay-util';
 import { VnPayPaymentResultDto } from '../payment/vnpay/dtos/vnpay-payment-result.dto';
-import moment from 'moment-timezone';
 import { Role } from '../../common/constants/role';
+import { UserFilterDto } from './dtos/user-filter.dto';
+import { PaginationDto } from '../../common/dtos/pagination.dto';
+import { GroupRequestToJoinStatus } from '../group/enums/group-request-to-join-status';
 
 @Injectable()
 export class UserService {
@@ -33,6 +38,44 @@ export class UserService {
     private readonly accountProviderRepository: Repository<AccountProviderLinkingEntity>,
     private readonly transactionService: TransactionService,
   ) {}
+
+  async list(
+    searchParams: UserFilterDto,
+  ): Promise<PaginationDto<UserDetailDto>> {
+    const qb = this.accountRepository.createQueryBuilder('a').where('1 = 1');
+
+    if (searchParams.username) {
+      qb.andWhere('a.username LIKE :username', {
+        username: `%${searchParams.username}%`,
+      });
+    }
+    if (searchParams.email) {
+      qb.andWhere('a.email LIKE :email', { email: `%${searchParams.email}%` });
+    }
+    if (searchParams.groupId) {
+      qb.innerJoin(
+        'a.accountGroups',
+        'ac',
+        'ac.groupId = :groupId AND ac.requestToJoinStatus = :status',
+        {
+          groupId: searchParams.groupId,
+          status: GroupRequestToJoinStatus.ACCEPTED,
+        },
+      );
+    }
+
+    const numRecords = await qb.getCount();
+    const users = await qb.getMany();
+
+    return {
+      page: searchParams.page,
+      pageCount: searchParams.perPage,
+      totalCount: numRecords,
+      data: users.map((user) =>
+        _.pick(user, ['id', 'username', 'email', 'avatar']),
+      ),
+    };
+  }
 
   async findOneById(
     userId: number,

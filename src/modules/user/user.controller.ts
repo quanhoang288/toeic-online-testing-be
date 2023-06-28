@@ -8,7 +8,13 @@ import {
   UseGuards,
   ValidationPipe,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiExtraModels,
+  ApiOkResponse,
+  ApiTags,
+  getSchemaPath,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Request, Response } from 'express';
 import { VnpayPaymentService } from '../payment/vnpay/vnpay-payment.service';
@@ -17,9 +23,14 @@ import { UPGRADE_USER_ORDER_INFO_PATTERN } from '../../common/utils/vnpay-util';
 import { UserService } from './user.service';
 import { VnPayPaymentResultDto } from '../payment/vnpay/dtos/vnpay-payment-result.dto';
 import { UserFilterDto } from './dtos/user-filter.dto';
+import { RolesGuard } from '../../guards/roles.guard';
+import { AdminRole } from '../../decorators/admin-role.decorator';
+import { PaginationDto } from '../../common/dtos/pagination.dto';
+import { UserDetailDto } from './dtos/user.dto';
 
 @Controller('users')
 @ApiTags('users')
+@ApiExtraModels(UserDetailDto)
 export class UserController {
   constructor(
     private readonly vnpayPaymentService: VnpayPaymentService,
@@ -27,17 +38,35 @@ export class UserController {
     private readonly appConfigService: AppConfigService,
   ) {}
 
-  // @Get()
-  // async list(
-  //   @Query(
-  //     new ValidationPipe({
-  //       transformOptions: { enableImplicitConversion: true },
-  //     }),
-  //   )
-  //   filterDto: UserFilterDto,
-  // ) {
-  //   return this.userService.list(filterDto);
-  // }
+  @Get()
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(PaginationDto) },
+        {
+          properties: {
+            data: {
+              type: 'array',
+              items: { $ref: getSchemaPath(UserDetailDto) },
+            },
+          },
+        },
+      ],
+    },
+  })
+  @AdminRole()
+  async list(
+    @Query(
+      new ValidationPipe({
+        transformOptions: { enableImplicitConversion: true },
+      }),
+    )
+    filterDto: UserFilterDto,
+  ) {
+    return this.userService.list(filterDto);
+  }
 
   @Post('request-vip-upgrade')
   @ApiBearerAuth()

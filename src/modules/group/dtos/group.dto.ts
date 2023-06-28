@@ -11,7 +11,6 @@ import {
 } from 'class-validator';
 import { GroupMemberDto } from './group-member.dto';
 import { GroupChannelDto } from './group-channel.dto';
-import { GroupRequestToJoinDto } from './group-request-to-join.dto';
 
 export class GroupDto {
   @ApiProperty({ required: false })
@@ -42,18 +41,14 @@ export class GroupDto {
   @ValidateNested({ each: true })
   @Type(() => GroupMemberDto)
   members?: GroupMemberDto[];
+}
 
-  @ApiProperty({
-    type: [GroupRequestToJoinDto],
-    description: 'Request to join list. Used for detail API',
-    required: false,
-    nullable: true,
-  })
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => GroupRequestToJoinDto)
-  requestsToJoin?: GroupRequestToJoinDto[];
+export class GroupDetailDto extends GroupDto {
+  @ApiProperty({ type: GroupMemberDto })
+  creator: GroupMemberDto;
+
+  @ApiProperty()
+  isAdmin: boolean;
 }
 
 export class GroupListItemDto {

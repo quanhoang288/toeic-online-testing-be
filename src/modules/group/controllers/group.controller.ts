@@ -28,7 +28,7 @@ import {
   GroupRequestToJoinDto,
   RequestToJoinGroupResponseDto,
 } from '../dtos/group-request-to-join.dto';
-import { GroupDto, GroupListItemDto } from '../dtos/group.dto';
+import { GroupDetailDto, GroupDto, GroupListItemDto } from '../dtos/group.dto';
 import { ApiResponseDto } from '../../../common/dtos/api-response.dto';
 import { AllowedRoles } from '../../../decorators/allowed-role.decorator';
 import { Role } from '../../../common/constants/role';
@@ -37,6 +37,7 @@ import { GroupMemberDto } from '../dtos/group-member.dto';
 import { GroupFilterDto } from '../dtos/group-filter.dto';
 import { PaginationDto } from '../../../common/dtos/pagination.dto';
 import { PublicRoute } from '../../../decorators/public-route.decorator';
+import { ProcessRequestToJoinGroupDto } from '../dtos/process-request-to-join-group.dto';
 
 @Controller('groups')
 @ApiTags('groups')
@@ -93,9 +94,11 @@ export class GroupController {
   }
 
   @Get(':id')
-  @ApiOkResponse({ type: GroupDto })
-  async show(@Param('id', ParseIntPipe) groupId: number) {
-    return this.groupService.show(groupId);
+  @PublicRoute(true)
+  @UseGuards(JwtAuthGuard)
+  @ApiOkResponse({ type: GroupDetailDto })
+  async show(@Req() req: Request, @Param('id', ParseIntPipe) groupId: number) {
+    return this.groupService.show(groupId, req.user?.id);
   }
 
   @Post()
@@ -117,8 +120,7 @@ export class GroupController {
     @Req() req: Request,
     @Param('id', ParseIntPipe) groupId: number,
   ) {
-    await this.groupService.requestToJoinGroup(groupId, req.user.id);
-    return { message: 'Request to join group successfully' };
+    return this.groupService.requestToJoinGroup(groupId, req.user.id);
   }
 
   @Post(':id/cancel-request-to-join')
@@ -138,25 +140,18 @@ export class GroupController {
   @ApiBearerAuth()
   @ApiOkResponse({ type: ApiResponseDto })
   @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        accept: {
-          type: 'boolean',
-          nullable: false,
-        },
-      },
-    },
+    type: ProcessRequestToJoinGroupDto,
   })
-  async processlRequestToJoinGroup(
+  async processRequestToJoinGroup(
     @Req() req: Request,
     @Param('id', ParseIntPipe) groupId: number,
-    @Body('accept') accept: boolean,
+    @Body() processRequestDto: ProcessRequestToJoinGroupDto,
   ) {
     await this.groupService.processRequestToJoinGroup(
       groupId,
+      processRequestDto.userId,
       req.user.id,
-      accept,
+      processRequestDto.accept,
     );
     return { message: 'Process request to join group successfully' };
   }
@@ -172,7 +167,7 @@ export class GroupController {
     @Body() groupDto: Partial<GroupDto>,
   ) {
     await this.groupService.update(groupId, groupDto, req.user.id);
-    return;
+    return { message: 'Update group successfully' };
   }
 
   @Delete(':id')

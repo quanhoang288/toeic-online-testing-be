@@ -1,4 +1,11 @@
-import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
+import {
+  Column,
+  DeleteDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+} from 'typeorm';
 import { AbstractEntity } from '../../common/models/abstract.entity';
 import { GroupChannelEntity } from './group-channel.entity';
 import { ExamEntity } from './exam.entity';
@@ -30,4 +37,7 @@ export class GroupEntity extends AbstractEntity {
 
   @OneToMany(() => AccountGroupEntity, (accGroup) => accGroup.group)
   accountGroups: AccountGroupEntity[];
+
+  @DeleteDateColumn({ type: 'timestamp', nullable: true })
+  deletedAt?: Date;
 }

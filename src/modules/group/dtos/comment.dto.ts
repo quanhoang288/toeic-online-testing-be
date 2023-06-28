@@ -17,11 +17,6 @@ class CommentCreator {
 
 export class CommentDto {
   @ApiProperty()
-  @IsNumber()
-  @IsNotEmpty()
-  postId: number;
-
-  @ApiProperty()
   @IsString()
   @IsNotEmpty()
   content: string;
@@ -31,6 +26,14 @@ export class CommentListItemDto extends CommentDto {
   @ApiProperty()
   id: number;
 
+  @ApiProperty()
+  @IsNumber()
+  @IsNotEmpty()
+  postId: number;
+
   @ApiProperty({ type: CommentCreator })
   creator: CommentCreator;
+
+  @ApiProperty()
+  createdAt: string;
 }

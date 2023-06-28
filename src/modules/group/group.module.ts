@@ -13,6 +13,7 @@ import { PostCommentEntity } from '../../database/entities/post-comment.entity';
 import { PostLikeEntity } from '../../database/entities/post-like.entity';
 import { GroupChannelController } from './controllers/group-channel.controller';
 import { PostController } from './controllers/post.controller';
+import { PostService } from './services/post.service';
 @Module({
   imports: [
     UserModule,
@@ -26,7 +27,7 @@ import { PostController } from './controllers/post.controller';
       PostLikeEntity,
     ]),
   ],
-  providers: [GroupService, GroupChannelService],
+  providers: [GroupService, GroupChannelService, PostService],
   controllers: [GroupController, GroupChannelController, PostController],
 })
 export class GroupModule {}

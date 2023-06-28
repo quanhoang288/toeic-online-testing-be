@@ -59,8 +59,6 @@ export class VnpayPaymentService {
     }
 
     vnp_Params = sortObject(vnp_Params);
-    console.log('sorted: ', vnp_Params);
-
     vnp_Params['vnp_SecureHash'] = generateChecksum(
       querystring.stringify(vnp_Params, { encode: false }),
       hashSecret,

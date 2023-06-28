@@ -1,4 +1,10 @@
-import { Column, Entity, ManyToOne, OneToMany } from 'typeorm';
+import {
+  Column,
+  DeleteDateColumn,
+  Entity,
+  ManyToOne,
+  OneToMany,
+} from 'typeorm';
 import { AbstractEntity } from '../../common/models/abstract.entity';
 import { GroupEntity } from './group.entity';
 import { ChannelPostEntity } from './channel-post.entity';
@@ -18,4 +24,7 @@ export class GroupChannelEntity extends AbstractEntity {
 
   @OneToMany(() => ChannelPostEntity, (post) => post.channel)
   posts: ChannelPostEntity[];
+
+  @DeleteDateColumn({ type: 'timestamp', nullable: true })
+  deletedAt?: Date;
 }

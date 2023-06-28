@@ -82,7 +82,7 @@ export class ExamService {
   ): Promise<PaginationDto<ExamListItemDto>> {
     const user = await this.accountRepository.findOne({
       where: { id: authUserId },
-      relations: ['groups', 'roles'],
+      relations: ['accountGroups', 'roles'],
     });
     if (!user) {
       throw new BadRequestException('User not found');
@@ -91,8 +91,11 @@ export class ExamService {
 
     const isAdmin = user.roles.some((role) => role.isAdmin);
     const accessScopeFilter = [];
-    if (!isAdmin && user.roles.some((role) => role.name === Role.VIP_USER)) {
-      accessScopeFilter.push(ExamScope.PUBLIC, ExamScope.VIP);
+    if (!isAdmin) {
+      accessScopeFilter.push(ExamScope.PUBLIC);
+      if (user.roles.some((role) => role.name === Role.VIP_USER)) {
+        accessScopeFilter.push(ExamScope.VIP);
+      }
     }
     if (accessScopeFilter.length) {
       whereCond.accessScope = In(accessScopeFilter);
@@ -130,6 +133,8 @@ export class ExamService {
         id: exam.id,
         name: exam.name,
         type: exam.examType?.name,
+        accessScope: exam.accessScope,
+        timeLimitInMins: exam.timeLimitInMins,
         isMiniTest: exam.isMiniTest,
         examSet: exam.examSet.title,
         registerStartsAt: exam.registerStartsAt?.toISOString(),
@@ -276,7 +281,7 @@ export class ExamService {
       where: {
         id: authUserId,
       },
-      relations: ['groups', 'roles'],
+      relations: ['accountGroups', 'roles'],
     });
     if (!user) {
       throw new BadRequestException('User not found');
@@ -456,7 +461,7 @@ export class ExamService {
       where: {
         id: authUserId,
       },
-      relations: ['groups', 'roles'],
+      relations: ['accountGroups', 'roles'],
     });
     if (!user) {
       throw new BadRequestException('User not found');

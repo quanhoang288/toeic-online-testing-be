@@ -15,7 +15,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { TransactionService } from '../../../shared/services/transaction.service';
 import { GroupChannelEntity } from '../../../database/entities/group-channel.entity';
 import { AccountGroupEntity } from '../../../database/entities/account-group.entity';
-import { GroupDto, GroupListItemDto } from '../dtos/group.dto';
+import { GroupDetailDto, GroupDto, GroupListItemDto } from '../dtos/group.dto';
 import { GroupRequestToJoinStatus } from '../enums/group-request-to-join-status';
 import {
   GroupRequestToJoinDto,
@@ -74,7 +74,6 @@ export class GroupService {
     const accountGroups = await this.accountGroupRepository.find({
       where: {
         accountId: authUserId,
-        requestToJoinStatus: GroupRequestToJoinStatus.ACCEPTED,
       },
     });
 
@@ -94,39 +93,27 @@ export class GroupService {
     };
   }
 
-  async show(groupId: number): Promise<GroupDto> {
+  async show(groupId: number, authUserId?: number): Promise<GroupDetailDto> {
     const group = await this.groupRepository.findOne({
       where: {
         id: groupId,
       },
       relations: {
         channels: true,
-        accountGroups: {
-          account: true,
-        },
+        creator: true,
       },
     });
     if (!group) {
       throw new NotFoundException('Group not found');
     }
 
-    const requestsToJoin = [];
-    const groupMembers = [];
-    for (const accGroup of group.accountGroups || []) {
-      const userInfo = {
-        id: accGroup.account.id,
-        username: accGroup.account.username,
-        email: accGroup.account.email,
-        avatar: accGroup.account.avatar,
-      };
-      if (accGroup.requestToJoinStatus === GroupRequestToJoinStatus.PENDING) {
-        requestsToJoin.push(userInfo);
-      } else if (
-        accGroup.requestToJoinStatus === GroupRequestToJoinStatus.ACCEPTED
-      ) {
-        groupMembers.push(userInfo);
-      }
-    }
+    const isAdmin = !!(await this.accountGroupRepository.findOne({
+      where: {
+        accountId: authUserId,
+        groupId,
+        isAdmin: true,
+      },
+    }));
 
     return {
       id: group.id,
@@ -136,8 +123,11 @@ export class GroupService {
         id: c.id,
         name: c.name,
       })),
-      members: groupMembers,
-      requestsToJoin: requestsToJoin,
+      isAdmin,
+      creator: {
+        ..._.pick(group.creator, ['id', 'username', 'email', 'avatar']),
+        isAdmin: true,
+      },
     };
   }
 
@@ -199,7 +189,7 @@ export class GroupService {
       where: {
         id: groupId,
       },
-      relations: ['accountGroups'],
+      relations: ['accountGroups', 'channels'],
     });
     if (!group) {
       throw new BadRequestException('Group not found');
@@ -229,12 +219,14 @@ export class GroupService {
           queryRunner.manager
             .getRepository(GroupChannelEntity)
             .save(
-              (groupDto.channels || []).filter(
-                (c) =>
-                  !channelsToRemove.some(
-                    (channelToRemove) => channelToRemove.id === c.id,
-                  ),
-              ),
+              (groupDto.channels || [])
+                .filter(
+                  (c) =>
+                    !channelsToRemove.some(
+                      (channelToRemove) => channelToRemove.id === c.id,
+                    ),
+                )
+                .map((c) => ({ ...c, groupId: group.id })),
             ),
           queryRunner.manager
             .getRepository(GroupChannelEntity)
@@ -251,8 +243,21 @@ export class GroupService {
                   GroupRequestToJoinStatus.ACCEPTED,
             ),
         );
-        const newMembers = groupDto.members.filter((m) => !m.id);
-        const membersToUpdate = groupDto.members.filter((m) => m.id);
+        const newMembers = groupDto.members.filter(
+          (m) =>
+            !(group.accountGroups || []).some(
+              (accGroup) =>
+                accGroup.accountId === m.id &&
+                accGroup.requestToJoinStatus ===
+                  GroupRequestToJoinStatus.ACCEPTED,
+            ),
+        );
+        const membersToUpdate = groupDto.members.filter(
+          (m) =>
+            !membersToRemove.some(
+              (memberToRemove) => memberToRemove.id === m.id,
+            ),
+        );
 
         await Promise.all([
           queryRunner.manager.getRepository(AccountGroupEntity).save(
@@ -260,6 +265,7 @@ export class GroupService {
               accountId: m.id,
               groupId: group.id,
               isAdmin: m.isAdmin,
+              requestToJoinStatus: GroupRequestToJoinStatus.ACCEPTED,
             })),
           ),
           membersToUpdate.map((m) =>
@@ -271,7 +277,7 @@ export class GroupService {
               ),
           ),
           queryRunner.manager.getRepository(AccountGroupEntity).delete({
-            accountId: In(membersToRemove.map((m) => m.id)),
+            accountId: In(membersToRemove.map((m) => m.accountId)),
             groupId: group.id,
           }),
         ]);
@@ -364,17 +370,9 @@ export class GroupService {
 
     const group = await this.groupRepository.findOne({
       where: { id: groupId },
-      relations: ['accountGroups'],
     });
-
-    if (
-      !user.accountGroups.some(
-        (accGroup) =>
-          accGroup.groupId === group.id &&
-          accGroup.requestToJoinStatus === GroupRequestToJoinStatus.ACCEPTED,
-      )
-    ) {
-      throw new BadRequestException('User not in group');
+    if (!group) {
+      throw new BadRequestException('Group not found');
     }
 
     const existingRequest = group.accountGroups.find(
@@ -462,8 +460,26 @@ export class GroupService {
   async processRequestToJoinGroup(
     groupId: number,
     userId: number,
+    authUserId: number,
     acceptRequest: boolean,
   ): Promise<void> {
+    const group = await this.groupRepository.findOneBy({ id: groupId });
+    if (!group) {
+      throw new BadRequestException('Group not found');
+    }
+    const isAdmin = !!(await this.accountGroupRepository.findOne({
+      where: {
+        accountId: authUserId,
+        groupId,
+        isAdmin: true,
+      },
+    }));
+    if (!isAdmin) {
+      throw new ForbiddenException(
+        'User must be an admin to process request to join group',
+      );
+    }
+
     const requestToJoin = await this.accountGroupRepository.findOne({
       where: {
         accountId: userId,

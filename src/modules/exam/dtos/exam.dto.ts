@@ -86,6 +86,12 @@ export class ExamListItemDto {
   @ApiProperty()
   isMiniTest: boolean;
 
+  @ApiProperty()
+  accessScope: string;
+
+  @ApiProperty({ nullable: true })
+  timeLimitInMins?: number;
+
   @ApiProperty({ nullable: true, required: false })
   examSet?: string;
 
