@@ -25,7 +25,7 @@ export class ExamStartRemindTask {
     private readonly appConfigService: AppConfigService,
   ) {}
 
-  @Cron('0 * * * * *')
+  @Cron('0 0 */2 * * *')
   async handleCron(): Promise<void> {
     this.logger.debug('Triggered exam start mail sending task every 2 hours');
     const examsToSendRemindMail = await this.getExamsToSendRemind();

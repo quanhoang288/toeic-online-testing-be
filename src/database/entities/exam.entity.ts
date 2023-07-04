@@ -12,6 +12,8 @@ import { ExamSetEntity } from './exam-set.entity';
 import { ExamResultEntity } from './exam-result.entity';
 import { ExamTypeEntity } from './exam-type.entity';
 import { ExamDetailEntity } from './exam-detail.entity';
+import { ExamScope } from '../../common/constants/exam-scope';
+import { GroupEntity } from './group.entity';
 
 export const EXAM_TABLE_NAME = 'exams';
 
@@ -23,11 +25,17 @@ export class ExamEntity extends AbstractEntity {
   @Column()
   examTypeId!: number;
 
+  @Column({ nullable: true })
+  groupId?: number;
+
   @Column({ default: true })
   hasMultipleSections!: boolean;
 
   @Column({ nullable: true })
   timeLimitInMins?: number;
+
+  @Column()
+  accessScope!: ExamScope;
 
   @Column({ nullable: true })
   examSetId?: number;
@@ -62,6 +70,10 @@ export class ExamEntity extends AbstractEntity {
   @ManyToOne(() => ExamTypeEntity)
   @JoinColumn({ name: 'exam_type_id' })
   examType: ExamTypeEntity;
+
+  @ManyToOne(() => GroupEntity, (group) => group.exams)
+  @JoinColumn({ name: 'group_id' })
+  group: GroupEntity;
 
   @ManyToOne(() => ExamSetEntity)
   @JoinColumn({ name: 'exam_set_id' })

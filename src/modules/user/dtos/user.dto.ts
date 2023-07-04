@@ -13,3 +13,17 @@ export class UserDto {
   @IsString()
   password: string;
 }
+
+export class UserDetailDto {
+  @ApiProperty()
+  id: number;
+
+  @ApiProperty({ nullable: true })
+  username?: string;
+
+  @ApiProperty()
+  email: string;
+
+  @ApiProperty({ nullable: true })
+  avatar?: string;
+}

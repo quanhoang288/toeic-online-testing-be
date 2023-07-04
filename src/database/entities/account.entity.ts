@@ -1,12 +1,4 @@
-import {
-  Column,
-  Entity,
-  JoinColumn,
-  JoinTable,
-  ManyToMany,
-  ManyToOne,
-  OneToMany,
-} from 'typeorm';
+import { Column, Entity, JoinTable, ManyToMany, OneToMany } from 'typeorm';
 import { AbstractEntity } from '../../common/models/abstract.entity';
 import { RoleEntity } from './role.entity';
 import { OAuthProviderEntity } from './oauth-provider.entity';
@@ -14,6 +6,11 @@ import { ExamEntity } from './exam.entity';
 import { QuestionArchiveEntity } from './question-archive.entity';
 import { ExamResultEntity } from './exam-result.entity';
 import { ExamRegistrationEntity } from './exam-registration.entity';
+import { PaymentTransactionEntity } from './payment-transaction.entity';
+import { AccountHasRoleEntity } from './account-has-role.entity';
+import moment from 'moment-timezone';
+import { AccountGroupEntity } from './account-group.entity';
+import { ChannelPostEntity } from './channel-post.entity';
 
 export const ACCOUNT_TABLE_NAME = 'accounts';
 
@@ -42,6 +39,15 @@ export class AccountEntity extends AbstractEntity {
 
   @Column({ nullable: true })
   refreshTokenExpiresAt?: Date;
+
+  @OneToMany(() => ChannelPostEntity, (post) => post.creator)
+  createdPosts: ChannelPostEntity[];
+
+  @OneToMany(() => AccountGroupEntity, (accGroup) => accGroup.account)
+  accountGroups: AccountGroupEntity[];
+
+  @OneToMany(() => AccountHasRoleEntity, (accHasRole) => accHasRole.account)
+  accountHasRoles: AccountHasRoleEntity[];
 
   @ManyToMany(() => RoleEntity, (role) => role.accounts)
   @JoinTable({
@@ -111,5 +117,29 @@ export class AccountEntity extends AbstractEntity {
   )
   examRegistrations: ExamRegistrationEntity[];
 
+  @OneToMany(
+    () => PaymentTransactionEntity,
+    (paymentTransaction) => paymentTransaction.account,
+  )
+  paymentTransactions: PaymentTransactionEntity[];
+
   authProvider?: string;
+
+  hasRole(roleId: number): boolean {
+    const now = new Date();
+    if (!this.accountHasRoles.length) {
+      return false;
+    }
+
+    const accHasRole = this.accountHasRoles.find(
+      (accHasRole) => accHasRole.roleId === roleId,
+    );
+    if (!accHasRole) {
+      return false;
+    }
+
+    return (
+      accHasRole.expiresAt && moment(now).isSameOrAfter(accHasRole.expiresAt)
+    );
+  }
 }

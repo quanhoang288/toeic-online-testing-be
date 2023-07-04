@@ -5,11 +5,13 @@ services:
     image: mysql:8.0
     container_name: toeic-db-dev
     restart: unless-stopped
+    command: --default-time-zone=UTC
     environment:
       MYSQL_ROOT_PASSWORD: '${DB_ROOT_PASSWORD}'
       MYSQL_DATABASE: '${DB_DATABASE}'
       MYSQL_USER: '${DB_USERNAME}'
       MYSQL_PASSWORD: '${DB_PASSWORD}'
+      TZ: UTC
     ports:
       - '$DB_PORT:3306'
     volumes:

@@ -23,6 +23,16 @@ export class ExamDto {
   @IsOptional()
   examTypeId?: number;
 
+  @ApiProperty()
+  @IsNumber()
+  @IsOptional()
+  groupId?: number;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  accessScope: string;
+
   @ApiProperty({ required: false })
   @IsBoolean()
   @IsOptional()
@@ -75,6 +85,12 @@ export class ExamListItemDto {
 
   @ApiProperty()
   isMiniTest: boolean;
+
+  @ApiProperty()
+  accessScope: string;
+
+  @ApiProperty({ nullable: true })
+  timeLimitInMins?: number;
 
   @ApiProperty({ nullable: true, required: false })
   examSet?: string;

@@ -41,5 +41,10 @@ export class ExamFilterDto extends PaginationOptionDto {
   @ApiProperty({ required: false, nullable: true })
   @IsOptional()
   @IsNumber()
+  readonly groupId?: number;
+
+  @ApiProperty({ required: false, nullable: true })
+  @IsOptional()
+  @IsNumber()
   readonly examSetId?: number;
 }

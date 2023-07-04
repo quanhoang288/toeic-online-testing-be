@@ -103,6 +103,28 @@ export class AppConfigService {
     ];
   }
 
+  get upgradeVipUserFee(): number {
+    return 50000;
+  }
+
+  get vnpayConfig(): {
+    tmnCode: string;
+    hashSecret: string;
+    vnpayUrl: string;
+    returnUrl: string;
+    ipnUrl: string;
+    paymentUrlExpiresInMins: number;
+  } {
+    return {
+      vnpayUrl: this.getString('VNPAY_URL'),
+      tmnCode: this.getString('VNPAY_TMN_CODE'),
+      hashSecret: this.getString('VNPAY_HASH_SECRET'),
+      returnUrl: this.getString('VNPAY_RETURN_URL'),
+      ipnUrl: this.getString('VNPAY_IPN_URL'),
+      paymentUrlExpiresInMins: 10,
+    };
+  }
+
   get awsSQSConfig(): {
     accessKeyId: string;
     secretAccessKey: string;
