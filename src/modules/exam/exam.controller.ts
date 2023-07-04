@@ -59,6 +59,8 @@ export class ExamController {
   constructor(private readonly examService: ExamService) {}
 
   @Get()
+  @PublicRoute(true)
+  @UseGuards(JwtAuthGuard)
   @ApiQuery({ type: ExamFilterDto })
   @ApiOkResponse({
     schema: {

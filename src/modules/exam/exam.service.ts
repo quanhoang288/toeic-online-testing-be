@@ -49,7 +49,6 @@ import { ExamTypeEntity } from '../../database/entities/exam-type.entity';
 import { ExamType } from '../../common/constants/exam-type';
 import { UserProgressDto } from './dtos/user-progress.dto';
 import { ExamScope } from '../../common/constants/exam-scope';
-import { Role } from '../../common/constants/role';
 import { GroupRequestToJoinStatus } from '../group/enums/group-request-to-join-status';
 
 @Injectable()
@@ -92,23 +91,22 @@ export class ExamService {
     const isAdmin = user.roles.some((role) => role.isAdmin);
     const accessScopeFilter = [];
     if (!isAdmin) {
-      accessScopeFilter.push(ExamScope.PUBLIC);
-      if (user.roles.some((role) => role.name === Role.VIP_USER)) {
-        accessScopeFilter.push(ExamScope.VIP);
-      }
+      accessScopeFilter.push(ExamScope.PUBLIC, ExamScope.VIP);
     }
     if (accessScopeFilter.length) {
       whereCond.accessScope = In(accessScopeFilter);
     }
-    const userGroupIds = (user.accountGroups || []).map(
-      (accGroup) =>
-        accGroup.groupId &&
-        accGroup.requestToJoinStatus === GroupRequestToJoinStatus.ACCEPTED,
-    );
-    if (searchParams.groupId) {
+    const userGroupIds = (user.accountGroups || [])
+      .filter(
+        (accGroup) =>
+          accGroup.requestToJoinStatus === GroupRequestToJoinStatus.ACCEPTED,
+      )
+      .map((accGroup) => accGroup.groupId);
+    if (
+      searchParams.groupId &&
+      (isAdmin || userGroupIds.includes(searchParams.groupId))
+    ) {
       whereCond.groupId = searchParams.groupId;
-    } else if (!isAdmin && userGroupIds.length) {
-      whereCond.groupId = In(userGroupIds);
     }
 
     const numRecords = await this.examRepository.count({
