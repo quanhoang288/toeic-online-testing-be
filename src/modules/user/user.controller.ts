@@ -56,7 +56,7 @@ export class UserController {
       ],
     },
   })
-  @AdminRole()
+  // @AdminRole()
   async list(
     @Query(
       new ValidationPipe({
@@ -68,16 +68,16 @@ export class UserController {
     return this.userService.list(filterDto);
   }
 
-  @Post('request-vip-upgrade')
+  @Get('request-vip-upgrade')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  async requestUpgradeUser(@Req() req: Request, @Res() res: Response) {
+  async requestUpgradeUser(@Req() req: Request) {
     const redirectUrl = this.vnpayPaymentService.createPaymentUrl({
       amount: this.appConfigService.upgradeVipUserFee,
       ipAddress: (req.headers['x-forwarded-for'] as string) || req.ip,
       orderInfo: UPGRADE_USER_ORDER_INFO_PATTERN + req.user.id,
     });
-    res.redirect(redirectUrl);
+    return { redirectUrl };
   }
 
   @Get('upgrade-callback/vnpay')
