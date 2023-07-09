@@ -49,6 +49,7 @@ import { UserProgressFilterDto } from './dtos/user-progress-filter.dto';
 import { UserProgressDto } from './dtos/user-progress.dto';
 import { AllowedRoles } from 'src/decorators/allowed-role.decorator';
 import { Role } from 'src/common/constants/role';
+import { ExamResultStatsDto } from './dtos/exam-result-stats.dto';
 
 @Controller('exams')
 @ApiTags('exams')
@@ -156,6 +157,12 @@ export class ExamController {
     @Param('id', ParseIntPipe) examId: number,
   ) {
     return this.examService.show(examId, req.user?.id);
+  }
+
+  @Get(':id/result-stats')
+  @ApiOkResponse({ type: ExamResultStatsDto })
+  async getResultStats(@Param('id', ParseIntPipe) examId: number) {
+    return this.examService.getResultStats(examId);
   }
 
   @Get(':id/results/:examResultId')
