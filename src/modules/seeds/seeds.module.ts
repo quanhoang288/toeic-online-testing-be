@@ -13,6 +13,9 @@ import { OAuthProviderSeedService } from './services/oauth-provider-seed.service
 import { AdminSeedService } from './services/admin-seed.service';
 import { AccountEntity } from '../../database/entities/account.entity';
 import { SharedModule } from '../../shared/shared.module';
+import { ExamEntity } from '../../database/entities/exam.entity';
+import { QuestionModule } from '../question/question.module';
+import { ExamSeedService } from './services/exam-seed.service';
 
 @Module({
   imports: [
@@ -27,7 +30,10 @@ import { SharedModule } from '../../shared/shared.module';
       RoleEntity,
       ExamTypeEntity,
       OAuthProviderEntity,
+      ExamEntity,
+      ExamTypeEntity,
     ]),
+    QuestionModule,
   ],
   providers: [
     AdminSeedService,
@@ -35,6 +41,7 @@ import { SharedModule } from '../../shared/shared.module';
     ExamTypeSeedService,
     OAuthProviderSeedService,
     SeedsService,
+    ExamSeedService,
   ],
   exports: [SeedsService],
 })

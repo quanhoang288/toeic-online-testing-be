@@ -50,6 +50,7 @@ import { ExamType } from '../../common/constants/exam-type';
 import { UserProgressDto } from './dtos/user-progress.dto';
 import { ExamScope } from '../../common/constants/exam-scope';
 import { GroupRequestToJoinStatus } from '../group/enums/group-request-to-join-status';
+import { ExamResultStatsDto } from './dtos/exam-result-stats.dto';
 
 @Injectable()
 export class ExamService {
@@ -134,7 +135,7 @@ export class ExamService {
         accessScope: exam.accessScope,
         timeLimitInMins: exam.timeLimitInMins,
         isMiniTest: exam.isMiniTest,
-        examSet: exam.examSet.title,
+        examSet: exam.examSet?.title,
         registerStartsAt: exam.registerStartsAt?.toISOString(),
         registerEndsAt: exam.registerEndsAt?.toISOString(),
         startsAt: exam.startsAt?.toISOString(),
@@ -1153,6 +1154,173 @@ export class ExamService {
     }
 
     return userProgress;
+  }
+
+  async getResultStats(examId: number): Promise<ExamResultStatsDto> {
+    const exam = await this.examRepository.findOneBy({ id: examId });
+    if (!exam) {
+      throw new BadRequestException('Exam not found');
+    }
+    const toeicType = await this.examTypeRepository.findOne({
+      where: {
+        name: ExamType.TOEIC,
+      },
+    });
+    const examSections = await this.sectionRepository.find({
+      where: {
+        examTypeId: toeicType.id,
+      },
+    });
+
+    const whereCond: FindOptionsWhere<ExamResultEntity> = {
+      examId,
+      exam: {
+        isMiniTest: false,
+      },
+    };
+
+    const examResults = await this.examResultRepository.find({
+      where: whereCond,
+      relations: {
+        resultsBySection: true,
+        detailResults: true,
+      },
+    });
+    const numTotalAttempts = examResults.length;
+    let avgTotal = 0;
+    let avgListening = 0;
+    let avgReading = 0;
+    const totalPointDistributionMappings = new Map<number, number>();
+    const readingPointDistributionMappings = new Map<number, number>();
+    const listeningPointDistributionMappings = new Map<number, number>();
+    const numCorrectsBySection = new Map<number, number>();
+
+    for (const res of examResults) {
+      // overall average
+      avgTotal += (res.totalPoints || 0) / numTotalAttempts;
+      avgListening += (res.listeningPoints || 0) / numTotalAttempts;
+      avgReading += (res.readingPoints || 0) / numTotalAttempts;
+
+      // point distributions
+      if (!totalPointDistributionMappings.has(res.totalPoints)) {
+        totalPointDistributionMappings.set(res.totalPoints, 1);
+      } else {
+        totalPointDistributionMappings.set(
+          res.totalPoints,
+          totalPointDistributionMappings.get(res.totalPoints) + 1,
+        );
+      }
+      if (!readingPointDistributionMappings.has(res.readingPoints)) {
+        readingPointDistributionMappings.set(res.readingPoints, 1);
+      } else {
+        readingPointDistributionMappings.set(
+          res.readingPoints,
+          readingPointDistributionMappings.get(res.readingPoints) + 1,
+        );
+      }
+      if (!listeningPointDistributionMappings.has(res.listeningPoints)) {
+        listeningPointDistributionMappings.set(res.listeningPoints, 1);
+      } else {
+        listeningPointDistributionMappings.set(
+          res.listeningPoints,
+          listeningPointDistributionMappings.get(res.listeningPoints) + 1,
+        );
+      }
+
+      // % of correct answers by sections
+      const resultsBySection = res.resultsBySection || [];
+      for (const sectionRes of resultsBySection) {
+        if (!numCorrectsBySection.has(sectionRes.sectionId)) {
+          numCorrectsBySection.set(
+            sectionRes.sectionId,
+            sectionRes.numCorrects,
+          );
+        } else {
+          numCorrectsBySection.set(
+            sectionRes.sectionId,
+            numCorrectsBySection.get(sectionRes.sectionId) +
+              sectionRes.numCorrects,
+          );
+        }
+      }
+
+      // % of correct answers by questions
+      // const resultsByQuestion = res.detailResults || [];
+      // for (const questionRes of resultsByQuestion) {
+      //   if (!numCorrectsByQuestion.has(questionRes.questionId)) {
+      //     numCorrectsByQuestion.set(
+      //       questionRes.questionId,
+      //       questionRes.isCorrect ? 1 : 0,
+      //     );
+      //   } else {
+      //     numCorrectsByQuestion.set(
+      //       questionRes.questionId,
+      //       numCorrectsByQuestion.get(questionRes.questionId) +
+      //         (questionRes.isCorrect ? 1 : 0),
+      //     );
+      //   }
+      // }
+    }
+
+    const totalPointDistributions: { point: number; freq: number }[] = [];
+    for (const [
+      point,
+      numEntries,
+    ] of totalPointDistributionMappings.entries()) {
+      totalPointDistributions.push({
+        point,
+        freq: numEntries,
+      });
+    }
+
+    const readingPointDistributions: { point: number; freq: number }[] = [];
+    for (const [
+      point,
+      numEntries,
+    ] of readingPointDistributionMappings.entries()) {
+      readingPointDistributions.push({
+        point,
+        freq: numEntries,
+      });
+    }
+
+    const listeningPointDistributions: { point: number; freq: number }[] = [];
+    for (const [
+      point,
+      numEntries,
+    ] of listeningPointDistributionMappings.entries()) {
+      listeningPointDistributions.push({
+        point,
+        freq: numEntries,
+      });
+    }
+
+    const correctPercentBySections: {
+      sectionId: number;
+      sectionName: string;
+      numQuestions: number;
+      correctPercent: number;
+    }[] = [];
+    for (const [sectionId, numCorrects] of numCorrectsBySection.entries()) {
+      const section = examSections.find((section) => section.id === sectionId);
+      correctPercentBySections.push({
+        sectionId,
+        sectionName: section.name,
+        numQuestions: section.numQuestions,
+        correctPercent:
+          (numCorrects / (numTotalAttempts * section.numQuestions)) * 100,
+      });
+    }
+
+    return {
+      avgTotal,
+      avgListening,
+      avgReading,
+      totalPointDistributions,
+      listeningPointDistributions,
+      readingPointDistributions,
+      correctPercentBySections,
+    };
   }
 
   private parseSearchParams(

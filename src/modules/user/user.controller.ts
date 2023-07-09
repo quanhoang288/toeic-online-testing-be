@@ -1,10 +1,8 @@
 import {
   Controller,
   Get,
-  Post,
   Query,
   Req,
-  Res,
   UseGuards,
   ValidationPipe,
 } from '@nestjs/common';
@@ -16,7 +14,7 @@ import {
   getSchemaPath,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { Request, Response } from 'express';
+import { Request } from 'express';
 import { VnpayPaymentService } from '../payment/vnpay/vnpay-payment.service';
 import { AppConfigService } from '../../shared/services/app-config.service';
 import { UPGRADE_USER_ORDER_INFO_PATTERN } from '../../common/utils/vnpay-util';
@@ -68,16 +66,16 @@ export class UserController {
     return this.userService.list(filterDto);
   }
 
-  @Post('request-vip-upgrade')
+  @Get('request-vip-upgrade')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  async requestUpgradeUser(@Req() req: Request, @Res() res: Response) {
+  async requestUpgradeUser(@Req() req: Request) {
     const redirectUrl = this.vnpayPaymentService.createPaymentUrl({
       amount: this.appConfigService.upgradeVipUserFee,
       ipAddress: (req.headers['x-forwarded-for'] as string) || req.ip,
       orderInfo: UPGRADE_USER_ORDER_INFO_PATTERN + req.user.id,
     });
-    res.redirect(redirectUrl);
+    return { redirectUrl };
   }
 
   @Get('upgrade-callback/vnpay')

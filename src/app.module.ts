@@ -19,6 +19,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { UserModule } from './modules/user/user.module';
 import { GroupModule } from './modules/group/group.module';
+import { StatsModule } from './modules/stats/stats.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { GroupModule } from './modules/group/group.module';
     PaymentModule,
     UserModule,
     GroupModule,
+    StatsModule,
   ],
 })
 export class AppModule {
