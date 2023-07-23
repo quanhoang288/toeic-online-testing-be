@@ -194,7 +194,7 @@ export class ExamSeedService extends SeedBaseService<ExamEntity> {
       part1QuestionIds.map((questionId, idx) => ({
         examId: createdExam.id,
         sectionId: toeicType.sections.find(
-          (section) => section.name === 'Part 1',
+          (section) => section.name === 'part1',
         ).id,
         displayOrder: idx,
         questionId,
@@ -210,7 +210,7 @@ export class ExamSeedService extends SeedBaseService<ExamEntity> {
       part2QuestionIds.map((questionId, idx) => ({
         examId: createdExam.id,
         sectionId: toeicType.sections.find(
-          (section) => section.name === 'Part 2',
+          (section) => section.name === 'part2',
         ).id,
         displayOrder: 7 + idx,
         questionId,
@@ -226,7 +226,7 @@ export class ExamSeedService extends SeedBaseService<ExamEntity> {
       part3QuestionSetIds.map((questionSetId, idx) => ({
         examId: createdExam.id,
         sectionId: toeicType.sections.find(
-          (section) => section.name === 'Part 3',
+          (section) => section.name === 'part3',
         ).id,
         displayOrder: 32 + idx,
         questionSetId,
@@ -242,7 +242,7 @@ export class ExamSeedService extends SeedBaseService<ExamEntity> {
       part4QuestionSetIds.map((questionSetId, idx) => ({
         examId: createdExam.id,
         sectionId: toeicType.sections.find(
-          (section) => section.name === 'Part 4',
+          (section) => section.name === 'part4',
         ).id,
         questionSetId,
         displayOrder: 70 + idx,
@@ -258,7 +258,7 @@ export class ExamSeedService extends SeedBaseService<ExamEntity> {
       part5QuestionIds.map((questionId, idx) => ({
         examId: createdExam.id,
         sectionId: toeicType.sections.find(
-          (section) => section.name === 'Part 5',
+          (section) => section.name === 'part5',
         ).id,
         questionId,
         displayOrder: 101 + idx,
@@ -274,7 +274,7 @@ export class ExamSeedService extends SeedBaseService<ExamEntity> {
       part6QuestionSetIds.map((questionSetId, idx) => ({
         examId: createdExam.id,
         sectionId: toeicType.sections.find(
-          (section) => section.name === 'Part 6',
+          (section) => section.name === 'part6',
         ).id,
         questionSetId,
         displayOrder: 131 + idx,
@@ -290,7 +290,7 @@ export class ExamSeedService extends SeedBaseService<ExamEntity> {
       part7QuestionSetIds.map((questionSetId, idx) => ({
         examId: createdExam.id,
         sectionId: toeicType.sections.find(
-          (section) => section.name === 'Part 7',
+          (section) => section.name === 'part7',
         ).id,
         questionSetId,
         displayOrder: 147 + idx,
