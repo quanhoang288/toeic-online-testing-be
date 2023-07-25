@@ -1,6 +1,8 @@
 import {
+  Body,
   Controller,
   Get,
+  Post,
   Query,
   Req,
   UseGuards,
@@ -8,6 +10,8 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBody,
+  ApiCreatedResponse,
   ApiExtraModels,
   ApiOkResponse,
   ApiTags,
@@ -22,9 +26,11 @@ import { UserService } from './user.service';
 import { VnPayPaymentResultDto } from '../payment/vnpay/dtos/vnpay-payment-result.dto';
 import { UserFilterDto } from './dtos/user-filter.dto';
 import { RolesGuard } from '../../guards/roles.guard';
-import { AdminRole } from '../../decorators/admin-role.decorator';
 import { PaginationDto } from '../../common/dtos/pagination.dto';
-import { UserDetailDto } from './dtos/user.dto';
+import { UserDetailDto, UserDto } from './dtos/user.dto';
+import { AllowedRoles } from '../../decorators/allowed-role.decorator';
+import { Role } from '../../common/constants/role';
+import { ApiResponseDto } from '../../common/dtos/api-response.dto';
 
 @Controller('users')
 @ApiTags('users')
@@ -54,7 +60,7 @@ export class UserController {
       ],
     },
   })
-  // @AdminRole()
+  @AllowedRoles([Role.ADMIN, Role.VIP_USER])
   async list(
     @Query(
       new ValidationPipe({
@@ -64,6 +70,17 @@ export class UserController {
     filterDto: UserFilterDto,
   ) {
     return this.userService.list(filterDto);
+  }
+
+  @Post('admin')
+  @ApiBearerAuth()
+  @ApiCreatedResponse({ type: ApiResponseDto })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @AllowedRoles([Role.SUPER_ADMIN])
+  @ApiBody({ type: UserDto })
+  async createAdmin(@Body() adminDto: UserDto) {
+    await this.userService.createAdmin(adminDto);
+    return { message: 'Create admin user successfully' };
   }
 
   @Get('request-vip-upgrade')
