@@ -12,6 +12,9 @@ import { QuestionArchiveResultEntity } from '../../database/entities/question-ar
 import { AppConfigService } from '../../shared/services/app-config.service';
 import { TodayStats } from './dtos/today-stats.dto';
 import { StatsByDate } from './dtos/stats-by-date.dto';
+import { ExamEntity } from '../../database/entities/exam.entity';
+import { ExamScope } from '../../common/constants/exam-scope';
+import { QuestionArchiveEntity } from '../../database/entities/question-archive.entity';
 
 @Injectable()
 export class StatsService {
@@ -23,8 +26,12 @@ export class StatsService {
     private readonly roleEntity: Repository<RoleEntity>,
     @InjectRepository(AccountHasRoleEntity)
     private readonly accountHasRoleRepository: Repository<AccountHasRoleEntity>,
+    @InjectRepository(ExamEntity)
+    private readonly examRepository: Repository<ExamEntity>,
     @InjectRepository(ExamResultEntity)
     private readonly examResultRepository: Repository<ExamResultEntity>,
+    @InjectRepository(QuestionArchiveEntity)
+    private readonly questionArchiveRepository: Repository<QuestionArchiveEntity>,
     @InjectRepository(QuestionArchiveResultEntity)
     private readonly questionArchiveResultRepository: Repository<QuestionArchiveResultEntity>,
   ) {}
@@ -41,45 +48,17 @@ export class StatsService {
         expiresAt: MoreThan(now),
       },
     });
-    const numUpgradesYesterday = await this.accountHasRoleRepository.count({
-      where: {
-        roleId: vipRole.id,
-        updatedAt: LessThan(now),
-        expiresAt: MoreThan(now),
-      },
-    });
     const numAccounts = await this.accountRepository.count({
       where: {
         createdAt: LessThan(moment(now).add(1, 'day').toDate()),
       },
     });
-    const numAccountsYesterday = await this.accountRepository.count({
-      where: {
-        createdAt: LessThan(now),
-      },
+    const numExams = await this.examRepository.count();
+    const numVipExams = await this.examRepository.count({
+      where: { accessScope: ExamScope.VIP },
     });
-    const numExamAttemptsToday = await this.examResultRepository
-      .createQueryBuilder('er')
-      .where('DATE(er.createdAt) = :createDate', {
-        createDate: moment(now).format('YYYY-MM-DD'),
-      })
-      .getCount();
-    const numExamAttemptsYesterday = await this.examResultRepository.count({
-      where: { createdAt: LessThan(now) },
-    });
-    const numQuestionArchiveAttemptsToday =
-      await this.questionArchiveResultRepository
-        .createQueryBuilder('qar')
-        .where('DATE(qar.createdAt) = :createDate', {
-          createDate: moment(now).format('YYYY-MM-DD'),
-        })
-        .getCount();
-    const numQuestionArchiveAttemptsYesterday =
-      await this.questionArchiveResultRepository.count({
-        where: {
-          createdAt: LessThan(now),
-        },
-      });
+    const numQuestionArchives = await this.questionArchiveRepository.count();
+
     const revenueToday =
       (await this.accountHasRoleRepository
         .createQueryBuilder('ahr')
@@ -99,20 +78,13 @@ export class StatsService {
         })
         .getCount()) * this.appConfigService.upgradeVipUserFee;
     return {
-      today: {
-        numAccounts,
-        numUpgrades,
-        numExamAttempts: numExamAttemptsToday,
-        numQuestionArchiveAttempts: numQuestionArchiveAttemptsToday,
-        revenue: revenueToday,
-      },
-      yesterday: {
-        numAccounts: numAccountsYesterday,
-        numUpgrades: numUpgradesYesterday,
-        numExamAttempts: numExamAttemptsYesterday,
-        numQuestionArchiveAttempts: numQuestionArchiveAttemptsYesterday,
-        revenue: revenueYesterday,
-      },
+      numAccounts,
+      numUpgrades,
+      numExams,
+      numVipExams,
+      numQuestionArchives,
+      revenue: revenueToday,
+      revenueYesterday,
     };
   }
 
@@ -150,7 +122,9 @@ export class StatsService {
         .groupBy('timestampCol')
         .getRawMany()) as { timestampCol: string; revenue: string }[]
     ).map((revenueGroup) => ({
-      timestampCol: moment(revenueGroup.timestampCol).format('YYYY-MM-DD'),
+      timestampCol: isGroupByHour
+        ? revenueGroup.timestampCol
+        : moment(revenueGroup.timestampCol).format('YYYY-MM-DD'),
       revenue: parseInt(revenueGroup.revenue),
     }));
 
@@ -172,7 +146,9 @@ export class StatsService {
         .groupBy('timestampCol')
         .getRawMany()) as { timestampCol: string; cnt: string }[]
     ).map((numAccountsGroup) => ({
-      timestampCol: moment(numAccountsGroup.timestampCol).format('YYYY-MM-DD'),
+      timestampCol: isGroupByHour
+        ? numAccountsGroup.timestampCol
+        : moment(numAccountsGroup.timestampCol).format('YYYY-MM-DD'),
       cnt: parseInt(numAccountsGroup.cnt),
     }));
 
@@ -196,9 +172,9 @@ export class StatsService {
         .groupBy('timestampCol')
         .getRawMany()) as { timestampCol: string; cnt: string }[]
     ).map((numExamAttemptGroup) => ({
-      timestampCol: moment(numExamAttemptGroup.timestampCol).format(
-        'YYYY-MM-DD',
-      ),
+      timestampCol: isGroupByHour
+        ? numExamAttemptGroup.timestampCol
+        : moment(numExamAttemptGroup.timestampCol).format('YYYY-MM-DD'),
       cnt: parseInt(numExamAttemptGroup.cnt),
     }));
 
@@ -221,9 +197,11 @@ export class StatsService {
         .groupBy('timestampCol')
         .getRawMany()) as { timestampCol: string; cnt: string }[]
     ).map((numQuestionArchiveAttemptGroup) => ({
-      timestampCol: moment(numQuestionArchiveAttemptGroup.timestampCol).format(
-        'YYYY-MM-DD',
-      ),
+      timestampCol: isGroupByHour
+        ? numQuestionArchiveAttemptGroup.timestampCol
+        : moment(numQuestionArchiveAttemptGroup.timestampCol).format(
+            'YYYY-MM-DD',
+          ),
       cnt: parseInt(numQuestionArchiveAttemptGroup.cnt),
     }));
     return {

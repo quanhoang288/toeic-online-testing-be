@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-class StatsItem {
+export class TodayStats {
   @ApiProperty()
   numAccounts: number;
 
@@ -8,19 +8,17 @@ class StatsItem {
   numUpgrades: number;
 
   @ApiProperty()
-  numExamAttempts: number;
+  numExams: number;
 
   @ApiProperty()
-  numQuestionArchiveAttempts: number;
+  numVipExams: number;
+
+  @ApiProperty()
+  numQuestionArchives: number;
 
   @ApiProperty()
   revenue: number;
-}
 
-export class TodayStats {
-  @ApiProperty({ type: StatsItem })
-  today: StatsItem;
-
-  @ApiProperty({ type: StatsItem })
-  yesterday: StatsItem;
+  @ApiProperty()
+  revenueYesterday: number;
 }

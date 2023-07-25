@@ -54,7 +54,7 @@ export class UserController {
       ],
     },
   })
-  @AdminRole()
+  // @AdminRole()
   async list(
     @Query(
       new ValidationPipe({

@@ -8,6 +8,8 @@ import { StatsService } from './stats.service';
 import { StatsController } from './stats.controller';
 import { ExamResultEntity } from '../../database/entities/exam-result.entity';
 import { QuestionArchiveResultEntity } from '../../database/entities/question-archive-result.entity';
+import { ExamEntity } from '../../database/entities/exam.entity';
+import { QuestionArchiveEntity } from '../../database/entities/question-archive.entity';
 
 @Module({
   imports: [
@@ -16,6 +18,9 @@ import { QuestionArchiveResultEntity } from '../../database/entities/question-ar
       RoleEntity,
       AccountHasRoleEntity,
       ExamResultEntity,
+      ExamEntity,
+      ExamResultEntity,
+      QuestionArchiveEntity,
       QuestionArchiveResultEntity,
     ]),
     PaymentModule,
