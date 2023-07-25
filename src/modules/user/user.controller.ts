@@ -1,10 +1,8 @@
 import {
   Controller,
   Get,
-  Post,
   Query,
   Req,
-  Res,
   UseGuards,
   ValidationPipe,
 } from '@nestjs/common';
@@ -16,7 +14,7 @@ import {
   getSchemaPath,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { Request, Response } from 'express';
+import { Request } from 'express';
 import { VnpayPaymentService } from '../payment/vnpay/vnpay-payment.service';
 import { AppConfigService } from '../../shared/services/app-config.service';
 import { UPGRADE_USER_ORDER_INFO_PATTERN } from '../../common/utils/vnpay-util';

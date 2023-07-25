@@ -227,7 +227,17 @@ export class UserService {
       throw new InternalServerErrorException('VIP role not found');
     }
 
+    const existingAccHasVipRole = await queryRunner.manager
+      .getRepository(AccountHasRoleEntity)
+      .findOne({
+        where: {
+          accountId: user.id,
+          roleId: vipRole.id,
+        },
+      });
+
     await queryRunner.manager.getRepository(AccountHasRoleEntity).save({
+      id: existingAccHasVipRole?.id,
       accountId: user.id,
       roleId: vipRole.id,
       expiresAt: moment(new Date()).add(43200, 'minutes').toDate(),

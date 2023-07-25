@@ -4,6 +4,7 @@ import { ExamTypeSeedService } from './services/exam-type-seed.service';
 import { RoleSeedService } from './services/role-seed.service';
 import { OAuthProviderSeedService } from './services/oauth-provider-seed.service';
 import { AdminSeedService } from './services/admin-seed.service';
+import { ExamSeedService } from './services/exam-seed.service';
 
 @Injectable()
 export class SeedsService {
@@ -12,6 +13,7 @@ export class SeedsService {
     private examTypeSeedService: ExamTypeSeedService,
     private roleSeedService: RoleSeedService,
     private oauthProviderSeedService: OAuthProviderSeedService,
+    private examSeedService: ExamSeedService,
   ) {}
 
   async seed() {
@@ -19,5 +21,6 @@ export class SeedsService {
     await this.roleSeedService.run();
     await this.oauthProviderSeedService.run();
     await this.adminSeedService.run();
+    await this.examSeedService.run();
   }
 }
