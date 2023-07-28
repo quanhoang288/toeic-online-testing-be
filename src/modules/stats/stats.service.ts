@@ -89,18 +89,21 @@ export class StatsService {
   }
 
   async getStatsByDate(from: string, to: string): Promise<StatsByDate> {
-    const fromDate = new Date(from);
+    const fromDate = new Date(moment(from).format());
     fromDate.setUTCHours(0, 0, 0, 0);
     let isGroupByHour = false;
     let toDate: Date;
     if (from === to) {
       isGroupByHour = true;
-      toDate = fromDate;
+      toDate = new Date(from);
       toDate.setUTCHours(23, 59, 59, 999);
     } else {
       toDate = new Date(to);
       toDate.setUTCHours(23, 59, 59, 999);
     }
+
+    console.log('fromDate', fromDate);
+    console.log('toDate', toDate);
 
     // revenue
     const vipRole = await this.roleEntity.findOneBy({ name: Role.VIP_USER });
@@ -177,6 +180,8 @@ export class StatsService {
         : moment(numExamAttemptGroup.timestampCol).format('YYYY-MM-DD'),
       cnt: parseInt(numExamAttemptGroup.cnt),
     }));
+
+    console.log('>>>>>>>>>>>>>>>', numExamAttemptsGroups);
 
     // practice attempts stats
     const questionArchiveAttemptFilterCond = {
