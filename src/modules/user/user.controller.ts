@@ -1,7 +1,10 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  Param,
+  ParseIntPipe,
   Post,
   Query,
   Req,
@@ -31,6 +34,7 @@ import { UserDetailDto, UserDto } from './dtos/user.dto';
 import { AllowedRoles } from '../../decorators/allowed-role.decorator';
 import { Role } from '../../common/constants/role';
 import { ApiResponseDto } from '../../common/dtos/api-response.dto';
+import { Request as ExpressRequest } from 'express';
 
 @Controller('users')
 @ApiTags('users')
@@ -60,7 +64,7 @@ export class UserController {
       ],
     },
   })
-  @AllowedRoles([Role.ADMIN, Role.VIP_USER])
+  @AllowedRoles([Role.ADMIN, Role.VIP_USER, Role.SUPER_ADMIN])
   async list(
     @Query(
       new ValidationPipe({
@@ -81,6 +85,19 @@ export class UserController {
   async createAdmin(@Body() adminDto: UserDto) {
     await this.userService.createAdmin(adminDto);
     return { message: 'Create admin user successfully' };
+  }
+
+  @Delete(':id')
+  @AllowedRoles([Role.ADMIN, Role.SUPER_ADMIN, Role.SUPER_ADMIN])
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiBearerAuth()
+  @ApiOkResponse({ type: ApiResponseDto })
+  async delete(
+    @Req() req: ExpressRequest,
+    @Param('id', ParseIntPipe) userId: number,
+  ) {
+    await this.userService.delete(userId, req.user?.id);
+    return { message: 'Account deleted successfully' };
   }
 
   @Get('request-vip-upgrade')

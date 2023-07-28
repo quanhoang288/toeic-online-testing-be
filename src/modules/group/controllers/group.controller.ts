@@ -105,7 +105,7 @@ export class GroupController {
   @ApiBearerAuth()
   @ApiCreatedResponse({ type: ApiResponseDto })
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @AllowedRoles([Role.ADMIN, Role.VIP_USER])
+  @AllowedRoles([Role.ADMIN, Role.VIP_USER, Role.SUPER_ADMIN])
   @ApiBody({ type: GroupDto })
   async create(@Req() req: Request, @Body() groupDto: GroupDto) {
     await this.groupService.create(groupDto, req.user.id);
@@ -158,7 +158,7 @@ export class GroupController {
 
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @AllowedRoles([Role.ADMIN, Role.VIP_USER])
+  @AllowedRoles([Role.ADMIN, Role.VIP_USER, Role.SUPER_ADMIN])
   @ApiBearerAuth()
   @ApiOkResponse({ type: ApiResponseDto })
   async update(
@@ -172,7 +172,7 @@ export class GroupController {
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @AllowedRoles([Role.ADMIN, Role.VIP_USER])
+  @AllowedRoles([Role.ADMIN, Role.VIP_USER, Role.SUPER_ADMIN])
   @ApiBearerAuth()
   @ApiOkResponse({ type: ApiResponseDto })
   async delete(

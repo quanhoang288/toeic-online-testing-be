@@ -72,7 +72,10 @@ export class UserService {
     }
 
     const numRecords = await qb.getCount();
-    const users = await qb.getMany();
+    const users = await qb
+      .skip(searchParams.skip)
+      .take(searchParams.perPage)
+      .getMany();
 
     const userRoles = await this.accountHasRoleRepository.find({
       where: {
@@ -284,5 +287,33 @@ export class UserService {
       expiresAt: moment(new Date()).add(43200, 'minutes').toDate(),
     });
     await queryRunner.manager.getRepository(AccountEntity).save(user);
+  }
+
+  async delete(userId: number, authUserId: number): Promise<void> {
+    const user = await this.accountRepository.findOne({
+      where: {
+        id: userId,
+      },
+      relations: ['roles'],
+    });
+
+    const admin = await this.accountRepository.findOne({
+      where: {
+        id: authUserId,
+      },
+      relations: ['roles'],
+    });
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    if (
+      user.roles.map((o) => o.name).includes(Role.ADMIN) &&
+      !admin.roles.map((o) => o.name).includes(Role.SUPER_ADMIN)
+    ) {
+      throw new BadRequestException('Only Super Admin can delete Admin');
+    }
+
+    await this.accountRepository.delete(userId);
   }
 }
