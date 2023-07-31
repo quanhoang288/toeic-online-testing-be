@@ -1,6 +1,11 @@
 import {
+  Body,
   Controller,
+  Delete,
   Get,
+  Param,
+  ParseIntPipe,
+  Post,
   Query,
   Req,
   UseGuards,
@@ -8,6 +13,8 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBody,
+  ApiCreatedResponse,
   ApiExtraModels,
   ApiOkResponse,
   ApiTags,
@@ -22,9 +29,12 @@ import { UserService } from './user.service';
 import { VnPayPaymentResultDto } from '../payment/vnpay/dtos/vnpay-payment-result.dto';
 import { UserFilterDto } from './dtos/user-filter.dto';
 import { RolesGuard } from '../../guards/roles.guard';
-import { AdminRole } from '../../decorators/admin-role.decorator';
 import { PaginationDto } from '../../common/dtos/pagination.dto';
-import { UserDetailDto } from './dtos/user.dto';
+import { UserDetailDto, UserDto } from './dtos/user.dto';
+import { AllowedRoles } from '../../decorators/allowed-role.decorator';
+import { Role } from '../../common/constants/role';
+import { ApiResponseDto } from '../../common/dtos/api-response.dto';
+import { Request as ExpressRequest } from 'express';
 
 @Controller('users')
 @ApiTags('users')
@@ -54,7 +64,7 @@ export class UserController {
       ],
     },
   })
-  // @AdminRole()
+  @AllowedRoles([Role.ADMIN, Role.VIP_USER, Role.SUPER_ADMIN])
   async list(
     @Query(
       new ValidationPipe({
@@ -64,6 +74,30 @@ export class UserController {
     filterDto: UserFilterDto,
   ) {
     return this.userService.list(filterDto);
+  }
+
+  @Post('admin')
+  @ApiBearerAuth()
+  @ApiCreatedResponse({ type: ApiResponseDto })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @AllowedRoles([Role.SUPER_ADMIN])
+  @ApiBody({ type: UserDto })
+  async createAdmin(@Body() adminDto: UserDto) {
+    await this.userService.createAdmin(adminDto);
+    return { message: 'Create admin user successfully' };
+  }
+
+  @Delete(':id')
+  @AllowedRoles([Role.ADMIN, Role.SUPER_ADMIN, Role.SUPER_ADMIN])
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiBearerAuth()
+  @ApiOkResponse({ type: ApiResponseDto })
+  async delete(
+    @Req() req: ExpressRequest,
+    @Param('id', ParseIntPipe) userId: number,
+  ) {
+    await this.userService.delete(userId, req.user?.id);
+    return { message: 'Account deleted successfully' };
   }
 
   @Get('request-vip-upgrade')

@@ -185,7 +185,7 @@ export class ExamController {
   @ApiBody({ type: ExamUploadDto })
   @ApiBearerAuth()
   @ApiCreatedResponse({ type: ApiResponseDto })
-  @AllowedRoles([Role.ADMIN, Role.VIP_USER])
+  @AllowedRoles([Role.ADMIN, Role.VIP_USER, Role.SUPER_ADMIN])
   @UseGuards(JwtAuthGuard, RolesGuard)
   async create(
     @Req() req: ExpressRequest,
@@ -201,7 +201,7 @@ export class ExamController {
   }
 
   @Put(':id')
-  @AllowedRoles([Role.ADMIN, Role.VIP_USER])
+  @AllowedRoles([Role.ADMIN, Role.SUPER_ADMIN, Role.VIP_USER])
   @UseGuards(JwtAuthGuard, RolesGuard)
   @UseInterceptors(
     FileFieldsInterceptor([{ name: 'audios' }, { name: 'images' }]),
@@ -225,7 +225,7 @@ export class ExamController {
   }
 
   @Delete(':id')
-  @AllowedRoles([Role.ADMIN, Role.VIP_USER])
+  @AllowedRoles([Role.ADMIN, Role.VIP_USER, Role.SUPER_ADMIN])
   @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiBearerAuth()
   @ApiOkResponse({ type: ApiResponseDto })

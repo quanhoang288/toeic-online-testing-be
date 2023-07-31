@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import bcrypt from 'bcrypt';
+import _ from 'lodash';
 
 import { RoleEntity } from '../../../database/entities/role.entity';
 import { SeedBaseService } from './seed-base.service';
@@ -36,19 +37,25 @@ export class AdminSeedService extends SeedBaseService<AccountEntity> {
           if (!adminRole) {
             throw new Error('Admin role not seeded');
           }
+          const superAdminRole = await this.getRepository()
+            .manager.getRepository(RoleEntity)
+            .findOneBy({ name: Role.SUPER_ADMIN });
+          if (!superAdminRole) {
+            throw new Error('Super admin role not seeded');
+          }
           const hashedPassword = await bcrypt.hash(
             this.appConfigService.defaultAdminPassword,
             10,
           );
           const createdAdmin = await this.getRepository().save({
-            ...admin,
+            ..._.pick(admin, ['email', 'username']),
             password: hashedPassword,
           });
           await this.getRepository()
             .manager.getRepository(AccountHasRoleEntity)
             .save({
               accountId: createdAdmin.id,
-              roleId: adminRole.id,
+              roleId: admin.isSuperAdmin ? superAdminRole.id : adminRole.id,
             });
         }
       }),

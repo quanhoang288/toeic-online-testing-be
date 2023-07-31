@@ -3,7 +3,7 @@ import {
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { QueryRunner, Repository } from 'typeorm';
+import { In, QueryRunner, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import bcrypt from 'bcrypt';
 import _ from 'lodash';
@@ -36,6 +36,8 @@ export class UserService {
     private readonly oauthProviderRepository: Repository<OAuthProviderEntity>,
     @InjectRepository(AccountProviderLinkingEntity)
     private readonly accountProviderRepository: Repository<AccountProviderLinkingEntity>,
+    @InjectRepository(AccountHasRoleEntity)
+    private readonly accountHasRoleRepository: Repository<AccountHasRoleEntity>,
     private readonly transactionService: TransactionService,
   ) {}
 
@@ -63,18 +65,60 @@ export class UserService {
         },
       );
     }
+    if (searchParams.role) {
+      qb.innerJoin('a.roles', 'r', 'r.name = :roleName', {
+        roleName: searchParams.role,
+      });
+    }
 
     const numRecords = await qb.getCount();
-    const users = await qb.getMany();
+    const users = await qb
+      .skip(searchParams.skip)
+      .take(searchParams.perPage)
+      .getMany();
+
+    const userRoles = await this.accountHasRoleRepository.find({
+      where: {
+        accountId: In(users.map((user) => user.id)),
+        expiresAt: null,
+      },
+      relations: ['role'],
+    });
 
     return {
       page: searchParams.page,
       pageCount: searchParams.perPage,
       totalCount: numRecords,
-      data: users.map((user) =>
-        _.pick(user, ['id', 'username', 'email', 'avatar']),
-      ),
+      data: users.map((user) => ({
+        ..._.pick(user, ['id', 'username', 'email', 'avatar']),
+        roles: userRoles
+          .filter((ur) => ur.accountId === user.id)
+          .map((ur) => _.pick(ur.role, ['id', 'name', 'isAdmin'])),
+      })),
     };
+  }
+
+  async createAdmin(adminDto: UserDto): Promise<void> {
+    const existingAdmin = await this.accountRepository.findOneBy({
+      email: adminDto.email,
+    });
+    if (existingAdmin) {
+      throw new BadRequestException('Admin with given email already existed');
+    }
+
+    const createdAcc = await this.accountRepository.save({
+      ...adminDto,
+      password: await bcrypt.hash(adminDto.password, 10),
+    });
+
+    const adminRole = await this.roleRepository.findOneBy({ name: Role.ADMIN });
+    if (!adminRole) {
+      throw new InternalServerErrorException('Admin role not found in DB');
+    }
+    await this.accountHasRoleRepository.save({
+      accountId: createdAcc.id,
+      roleId: adminRole.id,
+    });
   }
 
   async findOneById(
@@ -243,5 +287,33 @@ export class UserService {
       expiresAt: moment(new Date()).add(43200, 'minutes').toDate(),
     });
     await queryRunner.manager.getRepository(AccountEntity).save(user);
+  }
+
+  async delete(userId: number, authUserId: number): Promise<void> {
+    const user = await this.accountRepository.findOne({
+      where: {
+        id: userId,
+      },
+      relations: ['roles'],
+    });
+
+    const admin = await this.accountRepository.findOne({
+      where: {
+        id: authUserId,
+      },
+      relations: ['roles'],
+    });
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    if (
+      user.roles.map((o) => o.name).includes(Role.ADMIN) &&
+      !admin.roles.map((o) => o.name).includes(Role.SUPER_ADMIN)
+    ) {
+      throw new BadRequestException('Only Super Admin can delete Admin');
+    }
+
+    await this.accountRepository.delete(userId);
   }
 }

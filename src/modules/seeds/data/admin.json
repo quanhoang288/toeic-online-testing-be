@@ -1,1 +1,4 @@
-[{ "email": "admin1@gmail.com" }]
+[
+  { "email": "admin1@gmail.com", "isSuperAdmin": false },
+  { "email": "superadmin1@gmail.com", "isSuperAdmin": true }
+]
