@@ -104,7 +104,7 @@ export class AppConfigService {
   }
 
   get upgradeVipUserFee(): number {
-    return 50000;
+    return 500000;
   }
 
   get vnpayConfig(): {

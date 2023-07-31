@@ -17,6 +17,7 @@ import { QuestionArchiveEntity } from '../../database/entities/question-archive.
       AccountEntity,
       RoleEntity,
       AccountHasRoleEntity,
+      ExamResultEntity,
       ExamEntity,
       ExamResultEntity,
       QuestionArchiveEntity,

@@ -731,7 +731,7 @@ export class ExamService {
       where: {
         id: authUserId,
       },
-      relations: ['groups', 'roles'],
+      relations: ['accountGroups', 'roles'],
     });
     if (!user) {
       throw new BadRequestException('User not found');
