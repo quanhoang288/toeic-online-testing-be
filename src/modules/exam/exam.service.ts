@@ -341,13 +341,13 @@ export class ExamService {
             isMiniTest: examDto.isMiniTest || false,
             timeLimitInMins: examDto.timeLimitInMins,
             registerStartsAt: examDto.registerStartsAt
-              ? moment(examDto.registerStartsAt).format('YYYYMMDD HH:mm')
+              ? moment.tz(examDto.registerStartsAt, 'UTC').toDate()
               : undefined,
             registerEndsAt: examDto.registerEndsAt
-              ? moment(examDto.registerEndsAt).format('YYYYMMDD HH:mm')
+              ? moment.tz(examDto.registerEndsAt, 'UTC').toDate()
               : undefined,
             startsAt: examDto.startsAt
-              ? moment(examDto.startsAt).format('YYYYMMDD HH:mm')
+              ? moment.tz(examDto.startsAt, 'UTC').toDate()
               : undefined,
             examSetId: examDto.examSetId,
           });
