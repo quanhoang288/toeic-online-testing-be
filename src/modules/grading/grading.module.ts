@@ -12,6 +12,7 @@ import { ExamEntity } from '../../database/entities/exam.entity';
 import { UserModule } from '../user/user.module';
 import { PointConversionService } from './services/point-conversion.service';
 import { SectionEntity } from '../../database/entities/section.entity';
+import { QuestionArchiveEntity } from '../../database/entities/question-archive.entity';
 @Module({
   imports: [
     UserModule,
@@ -21,6 +22,7 @@ import { SectionEntity } from '../../database/entities/section.entity';
       QuestionArchiveDetailEntity,
       ExamResultEntity,
       ExamResultDetailEntity,
+      QuestionArchiveEntity,
       QuestionArchiveResultEntity,
       QuestionArchiveResultDetailEntity,
       SectionEntity,

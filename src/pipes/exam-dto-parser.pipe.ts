@@ -15,6 +15,7 @@ export class ExamDtoParser implements PipeTransform {
     value: Record<string, unknown>,
     _metadata: ArgumentMetadata,
   ): Promise<Partial<ExamDto>> {
+    console.log('raw: ', value);
     const transformedDto: Partial<ExamDto> = _.omitBy(
       { ...value },
       (val) =>
@@ -24,6 +25,12 @@ export class ExamDtoParser implements PipeTransform {
         val == 'undefined' ||
         _.isEmpty(val),
     );
+    Object.keys(transformedDto).forEach((key) => {
+      if (['1', '0', 'true', 'false'].includes(transformedDto[key])) {
+        transformedDto[key] =
+          transformedDto[key] === '1' || transformedDto[key] === 'true';
+      }
+    });
 
     transformedDto.sections = _.isString(transformedDto.sections)
       ? JSON.parse(transformedDto.sections)

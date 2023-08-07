@@ -36,6 +36,11 @@ export class QuestionArchiveDto {
   @IsNotEmpty()
   sectionId!: number;
 
+  @ApiProperty()
+  @IsNumber()
+  @IsOptional()
+  numParticipants?: number;
+
   @ApiProperty({ type: [QuestionDto], required: false })
   @IsArray()
   @IsOptional()

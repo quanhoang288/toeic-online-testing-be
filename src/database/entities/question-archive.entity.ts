@@ -27,6 +27,9 @@ export class QuestionArchiveEntity extends AbstractEntity {
   @Column()
   numQuestions: number;
 
+  @Column({ default: 0 })
+  numParticipants!: number;
+
   @Column()
   sectionId!: number;
 
