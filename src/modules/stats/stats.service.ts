@@ -89,7 +89,7 @@ export class StatsService {
   }
 
   async getStatsByDate(from: string, to: string): Promise<StatsByDate> {
-    const fromDate = new Date(moment(from).format());
+    const fromDate = new Date(from);
     fromDate.setUTCHours(0, 0, 0, 0);
     let isGroupByHour = false;
     let toDate: Date;
@@ -117,7 +117,9 @@ export class StatsService {
         .createQueryBuilder('ahr')
         .select([
           `${
-            isGroupByHour ? 'HOUR(ahr.updatedAt)' : 'DATE(ahr.updatedAt)'
+            isGroupByHour
+              ? "CONCAT(HOUR(ahr.updatedAt), ':00')"
+              : 'DATE(ahr.updatedAt)'
           }  as timestampCol`,
           `COUNT(ahr.id) * ${this.appConfigService.upgradeVipUserFee}  as revenue`,
         ])

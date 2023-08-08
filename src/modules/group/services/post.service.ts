@@ -271,7 +271,7 @@ export class PostService {
     }
 
     await this.transactionService.runInTransaction(async (queryManager) => {
-      await queryManager.manager.getRepository(PostLikeEntity).save({
+      await queryManager.manager.getRepository(PostLikeEntity).delete({
         postId,
         createdBy: userId,
       });

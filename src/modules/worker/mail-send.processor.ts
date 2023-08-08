@@ -5,6 +5,7 @@ import { QueueNames } from '../../common/constants/queue-names';
 import { AwsSESService } from '../../shared/services/aws-ses.service';
 import { MailType } from '../../common/constants/mail-type';
 import { AppConfigService } from '../../shared/services/app-config.service';
+import moment from 'moment-timezone';
 
 @Injectable()
 export class MailSendProcessor {
@@ -32,7 +33,9 @@ export class MailSendProcessor {
             replacementData: {
               examName: data.examName,
               examUrl: data.clientDetailUrl,
-              startsAt: data.startsAt,
+              startsAt: moment(data.startsAt)
+                .subtract(7, 'hours')
+                .format('YYYY/MM/DD HH:mm'),
               timeLimits: data.timeLimits,
               username: registrar.username || registrar.email,
             },

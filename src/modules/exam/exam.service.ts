@@ -94,6 +94,9 @@ export class ExamService {
     if (!isAdmin) {
       accessScopeFilter.push(ExamScope.PUBLIC, ExamScope.VIP);
     }
+    if (searchParams.groupId) {
+      accessScopeFilter.push(ExamScope.GROUP);
+    }
     if (accessScopeFilter.length) {
       whereCond.accessScope = In(accessScopeFilter);
     }
@@ -140,6 +143,7 @@ export class ExamService {
         registerEndsAt: exam.registerEndsAt?.toISOString(),
         startsAt: exam.startsAt?.toISOString(),
         numParticipants: exam.numParticipants || 0,
+        groupId: exam.groupId,
       })),
     };
   }
@@ -155,6 +159,29 @@ export class ExamService {
     });
     if (!exam) {
       throw new NotFoundException('Exam not found');
+    }
+
+    const user = await this.accountRepository.findOne({
+      where: { id: accountId },
+      relations: ['accountGroups', 'roles'],
+    });
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    const isAdmin = user.roles.some((role) => role.isAdmin);
+
+    const userGroupIds = (user.accountGroups || [])
+      .filter(
+        (accGroup) =>
+          accGroup.requestToJoinStatus === GroupRequestToJoinStatus.ACCEPTED,
+      )
+      .map((accGroup) => accGroup.groupId);
+
+    if (!isAdmin && exam.groupId && !userGroupIds.includes(exam.groupId)) {
+      throw new BadRequestException(
+        'User has not joined the group to take this exam',
+      );
     }
 
     const examDetails = await this.examDetailRepository.find({
@@ -1014,16 +1041,16 @@ export class ExamService {
       data: examResults.map((result) => ({
         examResultId: result.id,
         examId: result.examId,
-        examName: result.exam.name,
-        isMiniTest: result.exam.isMiniTest,
-        numCorrects: result.numCorrects,
-        isPartial: result.isPartial,
-        numQuestions: result.numQuestions,
-        listeningPoints: result.listeningPoints,
-        readingPoints: result.readingPoints,
-        totalPoints: result.totalPoints,
-        timeTakenInSecs: result.timeTakenInSecs,
-        createdAt: result.createdAt,
+        examName: result.exam?.name,
+        isMiniTest: result.exam?.isMiniTest,
+        numCorrects: result?.numCorrects,
+        isPartial: result?.isPartial,
+        numQuestions: result?.numQuestions,
+        listeningPoints: result?.listeningPoints,
+        readingPoints: result?.readingPoints,
+        totalPoints: result?.totalPoints,
+        timeTakenInSecs: result?.timeTakenInSecs,
+        createdAt: result?.createdAt,
       })),
     };
   }
