@@ -13,6 +13,7 @@ export const dataSourceOptions: DataSourceOptions = {
   username: process.env['DB_USERNAME'] || 'dev',
   password: process.env['DB_PASSWORD'] || 'test',
   database: process.env['DB_DATABASE'] || 'toeic-db',
+  timezone: process.env['DB_TIMEZONE'] || 'Z',
   logging: true,
   entities: [path.join(__dirname, '../**/entities/*.entity.{js,ts}')],
   subscribers: [],

@@ -370,6 +370,7 @@ export class GroupService {
 
     const group = await this.groupRepository.findOne({
       where: { id: groupId },
+      relations: ['accountGroups'],
     });
     if (!group) {
       throw new BadRequestException('Group not found');

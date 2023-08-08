@@ -24,6 +24,7 @@ import { ExamType } from '../../../common/constants/exam-type';
 import { SectionType } from '../../../common/constants/section-type';
 import { SectionEntity } from '../../../database/entities/section.entity';
 import { ExamResultBySectionEntity } from '../../../database/entities/exam-result-by-section.entity';
+import { QuestionArchiveEntity } from '../../../database/entities/question-archive.entity';
 
 @Injectable()
 export class GradingService {
@@ -39,12 +40,10 @@ export class GradingService {
     private readonly sectionRepository: Repository<SectionEntity>,
     @InjectRepository(QuestionArchiveDetailEntity)
     private readonly questionArchiveDetailRepository: Repository<QuestionArchiveDetailEntity>,
-    @InjectRepository(ExamResultEntity)
-    private readonly examResultRepository: Repository<ExamResultEntity>,
     @InjectRepository(ExamResultDetailEntity)
     private readonly examResultDetailRepository: Repository<ExamResultDetailEntity>,
-    @InjectRepository(QuestionArchiveResultEntity)
-    private readonly questionArchiveResultRepository: Repository<QuestionArchiveResultEntity>,
+    @InjectRepository(QuestionArchiveEntity)
+    private readonly questionArchiveRepository: Repository<QuestionArchiveEntity>,
     @InjectRepository(QuestionArchiveResultDetailEntity)
     private readonly questionArchiveResultDetailRepository: Repository<QuestionArchiveResultDetailEntity>,
   ) {}
@@ -184,6 +183,14 @@ export class GradingService {
     accountId: number,
   ): Promise<AttemptResult> {
     const { questionArchiveId, questions } = questionArchiveAttemptDto;
+
+    const questionArchive = await this.questionArchiveRepository.findOneBy({
+      id: questionArchiveId,
+    });
+    if (!questionArchive) {
+      throw new BadRequestException('Question archive not found');
+    }
+
     const questionArchiveDetails =
       await this.questionArchiveDetailRepository.find({
         where: { questionArchiveId },
@@ -234,21 +241,30 @@ export class GradingService {
       );
     }
 
-    const createdQuestionArchiveResult =
-      await this.questionArchiveResultRepository.save({
-        questionArchiveId,
-        accountId,
-        numCorrects,
-        timeTakenInSecs: questionArchiveAttemptDto.timeTakenInSecs || 0,
-      });
+    let createdQuestionArchiveResult: QuestionArchiveResultEntity;
 
-    for (const questionArchiveResultDetail of questionArchiveResultDetails) {
-      questionArchiveResultDetail.questionArchiveResultId =
-        createdQuestionArchiveResult.id;
-    }
-    await this.questionArchiveResultDetailRepository.save(
-      questionArchiveResultDetails,
-    );
+    await this.transactionService.runInTransaction(async (queryRunner) => {
+      createdQuestionArchiveResult = await queryRunner.manager
+        .getRepository(QuestionArchiveResultEntity)
+        .save({
+          questionArchiveId,
+          accountId,
+          numCorrects,
+          timeTakenInSecs: questionArchiveAttemptDto.timeTakenInSecs || 0,
+        });
+
+      for (const questionArchiveResultDetail of questionArchiveResultDetails) {
+        questionArchiveResultDetail.questionArchiveResultId =
+          createdQuestionArchiveResult.id;
+      }
+      await queryRunner.manager
+        .getRepository(QuestionArchiveResultDetailEntity)
+        .save(questionArchiveResultDetails);
+      await queryRunner.manager.getRepository(QuestionArchiveEntity).save({
+        id: questionArchiveId,
+        numParticipants: questionArchive.numParticipants + 1,
+      });
+    });
 
     return { id: createdQuestionArchiveResult.id };
   }

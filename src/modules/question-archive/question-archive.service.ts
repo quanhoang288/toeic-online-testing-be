@@ -75,7 +75,7 @@ export class QuestionArchiveService {
       relations: ['section'],
     });
     if (!questionArchive) {
-      throw new NotFoundException('Exam not found');
+      throw new NotFoundException('Question archive not found');
     }
     let questionArchiveResults: QuestionArchiveResultEntity[];
     if (accountId) {
